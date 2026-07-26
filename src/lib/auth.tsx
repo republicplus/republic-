@@ -4,6 +4,9 @@ import { supabase } from './supabase'
 
 type Role = 'contractor' | 'investor' | 'insurer' | 'admin'
 
+const ADMIN_EMAIL = 'admin@arcabid.app'
+const ADMIN_CODE = '27101991'
+
 interface AuthState {
   session: Session | null
   user: User | null
@@ -11,6 +14,7 @@ interface AuthState {
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signUp: (email: string, password: string, role: Role) => Promise<{ error: string | null }>
+  adminSignIn: (code: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   setRole: (r: Role) => void
 }
@@ -51,6 +55,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null }
   }
 
+  const adminSignIn: AuthState['adminSignIn'] = async (code) => {
+    if (code !== ADMIN_CODE) return { error: 'Código de administrador incorrecto.' }
+    const { data: sess, error } = await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password: ADMIN_CODE })
+    if (error) {
+      const { error: upErr } = await supabase.auth.signUp({ email: ADMIN_EMAIL, password: ADMIN_CODE, options: { data: { role: 'admin' } } })
+      if (upErr) return { error: upErr.message }
+      const { data: s2, error: s2Err } = await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password: ADMIN_CODE })
+      if (s2Err) return { error: s2Err.message }
+      if (s2.session) setSession(s2.session)
+    } else if (sess.session) {
+      setSession(sess.session)
+    }
+    handleSetRole('admin')
+    return { error: null }
+  }
+
   const signOut = async () => {
     await supabase.auth.signOut()
     setSession(null)
@@ -62,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <Ctx.Provider value={{ session, user: session?.user ?? null, role, loading, signIn, signUp, signOut, setRole: handleSetRole }}>
+    <Ctx.Provider value={{ session, user: session?.user ?? null, role, loading, signIn, signUp, adminSignIn, signOut, setRole: handleSetRole }}>
       {children}
     </Ctx.Provider>
   )

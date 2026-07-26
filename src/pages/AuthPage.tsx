@@ -3,13 +3,13 @@ import { useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { AIOrb } from '../components/AIOrb'
 import { Button, Input } from '../components/ui'
-import { Sparkles, ShieldCheck, Users, Building2 } from 'lucide-react'
+import { Sparkles, ShieldCheck, Users, Building2, KeyRound } from 'lucide-react'
 import { cn } from '../lib/utils'
 
 type Role = 'contractor' | 'investor' | 'insurer'
 
 export function AuthPage() {
-  const { session, signIn, signUp } = useAuth()
+  const { session, signIn, signUp, adminSignIn } = useAuth()
   const nav = useNavigate()
   const [mode, setMode] = useState<'signin' | 'signup'>('signup')
   const [email, setEmail] = useState('')
@@ -17,6 +17,8 @@ export function AuthPage() {
   const [role, setRole] = useState<Role>('contractor')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [adminCode, setAdminCode] = useState('')
+  const [showAdmin, setShowAdmin] = useState(false)
 
   if (session) return <Navigate to="/app" replace />
 
@@ -27,6 +29,16 @@ export function AuthPage() {
     const res = mode === 'signin'
       ? await signIn(email, password)
       : await signUp(email, password, role)
+    setBusy(false)
+    if (res.error) setError(res.error)
+    else nav('/app')
+  }
+
+  const adminSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setBusy(true)
+    const res = await adminSignIn(adminCode)
     setBusy(false)
     if (res.error) setError(res.error)
     else nav('/app')
@@ -119,6 +131,34 @@ export function AuthPage() {
               {mode === 'signin' ? 'Regístrate' : 'Inicia sesión'}
             </button>
           </p>
+
+          <div className="mt-8 pt-6 border-t border-line">
+            {!showAdmin ? (
+              <button onClick={() => setShowAdmin(true)} className="w-full flex items-center justify-center gap-2 text-sm text-muted hover:text-navy-900 transition">
+                <KeyRound size={15} /> Acceso de administrador
+              </button>
+            ) : (
+              <form onSubmit={adminSubmit} className="space-y-3">
+                <div className="flex items-center gap-2 text-sm text-navy-900 font-medium">
+                  <ShieldCheck size={16} className="text-gold-500" /> Acceso Super Admin
+                </div>
+                <Input
+                  label="Código de administrador"
+                  type="password"
+                  value={adminCode}
+                  onChange={(e) => setAdminCode(e.target.value)}
+                  placeholder="••••••••"
+                  autoFocus
+                />
+                <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
+                  {busy ? 'Verificando…' : 'Entrar como admin'}
+                </Button>
+                <button type="button" onClick={() => { setShowAdmin(false); setAdminCode(''); setError(null) }} className="w-full text-xs text-muted hover:text-navy-700 transition">
+                  Cancelar
+                </button>
+              </form>
+            )}
+          </div>
         </div>
       </div>
     </div>
