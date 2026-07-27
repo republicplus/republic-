@@ -6,13 +6,29 @@ export function Card({ children, className, hover }: { children: ReactNode; clas
   return <div className={cn('rounded-2xl bg-violet-950/40 border border-violet-400/15 backdrop-blur-sm', hover && 'hover:border-fuchsia-400/30 hover:bg-violet-500/5 transition', className)}>{children}</div>
 }
 
-export function Button({ children, variant = 'primary', className, ...props }: { children: ReactNode; variant?: 'primary' | 'secondary' | 'gold' } & ButtonHTMLAttributes<HTMLButtonElement>) {
-  const variants = {
+export function Button({ children, variant = 'primary', size, className, ...props }: { children: ReactNode; variant?: 'primary' | 'secondary' | 'gold' | 'danger'; size?: 'sm' | 'md' } & ButtonHTMLAttributes<HTMLButtonElement>) {
+  const variants: Record<string, string> = {
     primary: 'bg-violet-900 hover:bg-violet-800 text-white border border-violet-500/40',
     secondary: 'bg-violet-950/50 hover:bg-violet-900/50 text-violet-200 border border-violet-400/20',
     gold: 'bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white',
+    danger: 'bg-rose-950/50 hover:bg-rose-900/50 text-rose-200 border border-rose-400/20',
   }
-  return <button className={cn('inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed', variants[variant], className)} {...props}>{children}</button>
+  const sizes: Record<string, string> = {
+    sm: 'px-2.5 py-1.5 text-xs',
+    md: 'px-4 py-2.5 text-sm',
+  }
+  return <button className={cn('inline-flex items-center justify-center gap-2 rounded-xl font-medium transition disabled:opacity-50 disabled:cursor-not-allowed', variants[variant], sizes[size || 'md'], className)} {...props}>{children}</button>
+}
+
+export function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label?: string }) {
+  return (
+    <label className="flex items-center gap-2 cursor-pointer">
+      <button type="button" onClick={() => onChange(!checked)} className={cn('relative w-10 h-6 rounded-full transition', checked ? 'bg-fuchsia-500' : 'bg-violet-950 border border-violet-400/30')}>
+        <span className={cn('absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform', checked && 'translate-x-4')} />
+      </button>
+      {label && <span className="text-sm text-violet-200">{label}</span>}
+    </label>
+  )
 }
 
 export function Input({ label, className, ...props }: { label?: string } & InputHTMLAttributes<HTMLInputElement>) {

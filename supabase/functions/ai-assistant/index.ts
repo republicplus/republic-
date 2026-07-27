@@ -15,12 +15,53 @@ const CREATE_SYSTEM_PROMPT = `Eres ArcaBid AI. Crea registros a partir de instru
 Devuelve ÚNICAMENTE un objeto JSON válido con los campos.
 
 Tablas y campos:
-- suppliers: name, industry, type, website, contact, email, phone, net_terms (int), states, products, notes, rating (0-5)
+- suppliers: name, industry, type, website, contact, email, phone, net_terms (int), states, products, notes, rating (0-5), category, tags, address, status
+- bid_pages: name, website, type (free|paid|mixed), category, contract_types, country_state, subscription_price (num), notes, tags, status
 - contracts: title, agency, solicitation_number, type, status, total_value (num), capital_required (num), estimated_profit (num), due_date (date), delivery_date (date), payment_date (date), naics, psc, notes
 - capital_sources: name, type (own|credit_line|investor|financing), available_amount (num), max_amount (num), interest_rate, term, contact, email, phone, notes, source_url
 - tools_links: name, url, description, category (bid|tool)
 
 Reglas: solo JSON. Campo "table" indica la tabla. Tipos correctos.`;
+
+const BULK_SUPPLIERS_PROMPT = `Eres ArcaBid AI. Analiza el texto del usuario y extrae TODOS los proveedores mayoristas que encuentres.
+Devuelve ÚNICAMENTE un objeto JSON válido: { "suppliers": [ { "name": "", "category": "", "products": "", "phone": "", "email": "", "website": "", "address": "", "states": "", "notes": "", "tags": "" } ] }
+Extrae cada proveedor como un objeto separado en el array. Si un campo no está disponible, usa string vacío.`;
+
+const BULK_BIDPAGES_PROMPT = `Eres ArcaBid AI. Analiza el texto del usuario y extrae TODAS las páginas web de licitaciones/bidding que encuentres.
+Devuelve ÚNICAMENTE un objeto JSON válido: { "bid_pages": [ { "name": "", "website": "", "type": "free|paid|mixed", "category": "", "contract_types": "", "country_state": "", "subscription_price": "", "notes": "", "tags": "" } ] }
+Extrae cada página como un objeto separado en el array. Si un campo no está disponible, usa string vacío.`;
+
+const CONTRACT_FLOW_PROMPT = `Eres ArcaBid AI, experto en analizar contratos gubernamentales (RFQs, bids, RFPs).
+Analiza el documento o texto del contrato y extrae toda la información relevante.
+
+Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura:
+{
+  "extracted": {
+    "contract_name": "", "agency": "", "solicitation_number": "", "naics": "", "psc": "",
+    "product_name": "", "brand": "", "model": "", "sku": "", "upc": "", "nsn": "",
+    "quantity": null, "unit": "", "specifications": "", "certifications_required": "",
+    "delivery_date": "", "delivery_location": "", "equivalents_allowed": false,
+    "service_type": "", "service_description": "", "service_location": "",
+    "start_date": "", "end_date": "", "duration": "", "personnel_required": "",
+    "licenses_required": "", "insurance_required": "", "special_conditions": ""
+  },
+  "suppliers": [
+    { "name": "", "product": "", "unit_price": null, "availability": "", "inventory": null, "delivery_time": "", "shipping_cost": null, "min_order": null, "warranty": "", "return_policy": "", "link": "", "notes": "", "recommendation": "" }
+  ],
+  "cost_analysis": {
+    "items": [ { "label": "", "amount": null } ],
+    "total_cost": null,
+    "margin_percent": null,
+    "recommended_price": null,
+    "estimated_profit": null
+  },
+  "compliance": {
+    "level": "cumple|cumple_parcial|no_cumple|revision",
+    "checks": [ { "criterion": "", "status": "pass|fail|review", "explanation": "" } ],
+    "risk_notes": ""
+  },
+  "summary": ""
+}`;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -51,14 +92,17 @@ Deno.serve(async (req: Request) => {
     }
 
     const body = await req.json();
-    const { question, history, mode, imageUrl, fileUrl, fileType, linkUrl } = body as {
+    const { question, history, mode, imageUrl, fileUrl, fileType, linkUrl, bulkType, bulkText, flowType } = body as {
       question: string;
       history?: { role: string; content: string }[];
-      mode?: "chat" | "create" | "analyze";
+      mode?: string;
       imageUrl?: string;
       fileUrl?: string;
       fileType?: string;
       linkUrl?: string;
+      bulkType?: string;
+      bulkText?: string;
+      flowType?: string;
     };
 
     const apiKey = Deno.env.get("OPENAI_API_KEY");
@@ -77,24 +121,37 @@ Deno.serve(async (req: Request) => {
       return await handleAnalyze(supabase, question, apiKey, imageUrl, fileUrl, fileType);
     }
 
+    if (mode === "bulk") {
+      return await handleBulk(bulkType, bulkText, apiKey);
+    }
+
+    if (mode === "flow") {
+      return await handleFlow(supabase, question, apiKey, imageUrl, fileUrl, fileType, flowType);
+    }
+
     return await handleChat(supabase, question, history, apiKey, imageUrl, fileUrl, fileType);
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message || "Error interno" }), {
+    return new Response(JSON.stringify({ error: (err as Error).message || "Error interno" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
 
-async function handleChat(
-  supabase: any,
-  question: string,
-  history: any,
-  apiKey: string,
-  imageUrl?: string,
-  fileUrl?: string,
-  fileType?: string
-) {
+async function callOpenAI(apiKey: string, messages: any[], temperature = 0.3, maxTokens = 1600, jsonMode = false) {
+  const body: any = { model: "gpt-4o-mini", messages, temperature, max_tokens: maxTokens };
+  if (jsonMode) body.response_format = { type: "json_object" };
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Error de OpenAI: ${res.status}`);
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
+async function handleChat(supabase: any, question: string, history: any, apiKey: string, imageUrl?: string, fileUrl?: string, fileType?: string) {
   const { data: contracts } = await supabase.from("contracts").select("*").order("created_at", { ascending: false });
   const { data: suppliers } = await supabase.from("suppliers").select("name, industry, type, net_terms, states, rating, email, phone");
 
@@ -121,63 +178,26 @@ async function handleChat(
     { role: "user", content },
   ];
 
-  const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: "gpt-4o-mini", messages, temperature: 0.7, max_tokens: 1600 }),
-  });
-
-  if (!openaiRes.ok) {
-    return new Response(JSON.stringify({ error: `Error de OpenAI: ${openaiRes.status}` }), {
-      status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  const data = await openaiRes.json();
-  const answer = data.choices?.[0]?.message?.content || "No pude generar una respuesta.";
-
-  return new Response(JSON.stringify({ answer }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  const answer = await callOpenAI(apiKey, messages, 0.7, 1600);
+  return new Response(JSON.stringify({ answer }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
 async function handleCreate(supabase: any, instruction: string, apiKey: string, linkUrl?: string) {
   let userContent = instruction;
   if (linkUrl) userContent = `Extrae información de este enlace y crea un registro: ${linkUrl}\nInstrucción: ${instruction}`;
 
-  const messages = [
-    { role: "system", content: CREATE_SYSTEM_PROMPT },
-    { role: "user", content: userContent },
-  ];
-
-  const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: "gpt-4o-mini", messages, temperature: 0.3, max_tokens: 1000, response_format: { type: "json_object" } }),
-  });
-
-  if (!openaiRes.ok) {
-    return new Response(JSON.stringify({ error: `Error de OpenAI: ${openaiRes.status}` }), {
-      status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  const data = await openaiRes.json();
-  const raw = data.choices?.[0]?.message?.content || "{}";
+  const messages = [{ role: "system", content: CREATE_SYSTEM_PROMPT }, { role: "user", content: userContent }];
+  const raw = await callOpenAI(apiKey, messages, 0.3, 1000, true);
 
   let parsed: any;
   try { parsed = JSON.parse(raw); } catch {
-    return new Response(JSON.stringify({ error: "No se pudo interpretar la instrucción" }), {
-      status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: "No se pudo interpretar la instrucción" }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
   const { table, ...fields } = parsed;
-  const allowed = ["suppliers", "companies", "investors", "contracts", "insurers", "capital_sources", "tools_links"];
+  const allowed = ["suppliers", "companies", "investors", "contracts", "insurers", "capital_sources", "tools_links", "bid_pages"];
   if (!table || !allowed.includes(table)) {
-    return new Response(JSON.stringify({ error: "Tabla no válida", table }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: "Tabla no válida", table }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
   const cleanFields: any = {};
@@ -186,63 +206,63 @@ async function handleCreate(supabase: any, instruction: string, apiKey: string, 
   }
 
   const { data: inserted, error: insErr } = await supabase.from(table).insert(cleanFields).select().single();
-
   if (insErr) {
-    return new Response(JSON.stringify({ error: insErr.message }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: insErr.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  return new Response(JSON.stringify({ answer: "Registro creado correctamente", record: inserted, table }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  return new Response(JSON.stringify({ answer: "Registro creado correctamente", record: inserted, table }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
-async function handleAnalyze(
-  supabase: any,
-  question: string,
-  apiKey: string,
-  imageUrl?: string,
-  fileUrl?: string,
-  fileType?: string
-) {
+async function handleAnalyze(supabase: any, question: string, apiKey: string, imageUrl?: string, fileUrl?: string, fileType?: string) {
   const content: any[] = [{ type: "text", text: question || "Analiza este documento de contrato y extrae toda la información relevante." }];
   if (imageUrl) content.push({ type: "image_url", image_url: { url: imageUrl } });
   if (fileUrl && fileType === "pdf") content.push({ type: "file", file: { url: fileUrl } });
 
   const messages: any[] = [
-    {
-      role: "system",
-      content: `Eres ArcaBid AI, experto en analizar documentos de contratos gubernamentales.
+    { role: "system", content: `Eres ArcaBid AI, experto en analizar documentos de contratos gubernamentales.
 Extrae toda la información relevante: agencia, número de licitación, fechas, valores, NAICS, PSC, productos/servicios, cantidades, condiciones de entrega, contacto del oficial de contratos.
-Devuelve un objeto JSON con todos los campos encontrados. Usa null para campos no encontrados. Incluye un "summary".`,
-    },
+Devuelve un objeto JSON con todos los campos encontrados. Usa null para campos no encontrados. Incluye un "summary".` },
     { role: "user", content },
   ];
 
-  const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: "gpt-4o-mini", messages, temperature: 0.2, max_tokens: 2000, response_format: { type: "json_object" } }),
-  });
-
-  if (!openaiRes.ok) {
-    return new Response(JSON.stringify({ error: `Error de OpenAI: ${openaiRes.status}` }), {
-      status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  const raw = await callOpenAI(apiKey, messages, 0.2, 2000, true);
+  let parsed: any;
+  try { parsed = JSON.parse(raw); } catch {
+    return new Response(JSON.stringify({ error: "No se pudo analizar el documento" }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const data = await openaiRes.json();
-  const raw = data.choices?.[0]?.message?.content || "{}";
+  return new Response(JSON.stringify({ extracted: parsed, summary: parsed.summary || "Análisis completado" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+}
+
+async function handleBulk(bulkType: string | undefined, bulkText: string | undefined, apiKey: string) {
+  if (!bulkText || !bulkType) {
+    return new Response(JSON.stringify({ error: "Falta texto o tipo de bulk" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
+  const prompt = bulkType === "suppliers" ? BULK_SUPPLIERS_PROMPT : BULK_BIDPAGES_PROMPT;
+  const messages = [{ role: "system", content: prompt }, { role: "user", content: bulkText }];
+  const raw = await callOpenAI(apiKey, messages, 0.2, 3000, true);
 
   let parsed: any;
   try { parsed = JSON.parse(raw); } catch {
-    return new Response(JSON.stringify({ error: "No se pudo analizar el documento" }), {
-      status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: "No se pudo interpretar el texto" }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  return new Response(JSON.stringify({ extracted: parsed, summary: parsed.summary || "Análisis completado" }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  return new Response(JSON.stringify(parsed), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+}
+
+async function handleFlow(supabase: any, question: string, apiKey: string, imageUrl?: string, fileUrl?: string, fileType?: string, flowType?: string) {
+  const content: any[] = [{ type: "text", text: question || "Analiza este contrato y extrae toda la información." }];
+  if (imageUrl) content.push({ type: "image_url", image_url: { url: imageUrl } });
+  if (fileUrl && fileType === "pdf") content.push({ type: "file", file: { url: fileUrl } });
+
+  const messages = [{ role: "system", content: CONTRACT_FLOW_PROMPT }, { role: "user", content }];
+  const raw = await callOpenAI(apiKey, messages, 0.2, 3000, true);
+
+  let parsed: any;
+  try { parsed = JSON.parse(raw); } catch {
+    return new Response(JSON.stringify({ error: "No se pudo analizar el contrato" }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
+  return new Response(JSON.stringify(parsed), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
