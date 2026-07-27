@@ -1,0 +1,1 @@
+ALTER TABLE bid_pages ADD COLUMN IF NOT EXISTS favorite boolean DEFAULT false;

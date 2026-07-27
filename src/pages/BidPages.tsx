@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle, InfoNote } from '../components/ui'
-import { Plus, Search, Pencil, Trash2, Globe, Sparkles, Loader as Loader2, ExternalLink, Filter, Eye, CircleCheck as CheckCircle2 } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Globe, Sparkles, Loader as Loader2, ExternalLink, Filter, Eye, CircleCheck as CheckCircle2, Star } from 'lucide-react'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
 
 const TYPES = ['free', 'paid', 'mixed']
@@ -14,7 +14,7 @@ const STATUS_TONE: Record<string,any> = { activa: 'success', pendiente: 'warning
 type BidPage = {
   id: string; name: string; website: string | null; type: string; category: string | null
   contract_types: string | null; country_state: string | null; subscription_price: number | null
-  notes: string | null; tags: string | null; status: string; created_at: string
+  notes: string | null; tags: string | null; status: string; created_at: string; favorite: boolean | null
 }
 
 export function BidPages() {
@@ -34,6 +34,7 @@ export function BidPages() {
   const [bulkPreview, setBulkPreview] = useState<any[]>([])
   const [bulkBusy, setBulkBusy] = useState(false)
   const [bulkStep, setBulkStep] = useState<'input' | 'preview'>('input')
+  const [favOnly, setFavOnly] = useState(false)
 
   useEffect(() => { load() }, [])
   async function load() {
@@ -58,6 +59,12 @@ export function BidPages() {
   function edit(b: BidPage) { setEditId(b.id); setDraft(b); setOpen(true) }
   async function remove(id: string) { await supabase.from('bid_pages').delete().eq('id', id); setRows((r) => r.filter((x) => x.id !== id)) }
   function close() { setOpen(false); setEditId(null); setDraft({ name: '', type: 'free', status: 'activa' }) }
+
+  async function toggleFav(id: string, fav: boolean | null) {
+    const next = !fav
+    await supabase.from('bid_pages').update({ favorite: next }).eq('id', id)
+    setRows((r) => r.map((x) => x.id === id ? { ...x, favorite: next } : x))
+  }
 
   async function analyzeBulk() {
     if (!bulkText.trim()) return
@@ -94,7 +101,9 @@ export function BidPages() {
   }
 
   const categories = Array.from(new Set(rows.map((r) => r.category).filter(Boolean))) as string[]
+  const favCount = rows.filter((b) => b.favorite).length
   const filtered = rows.filter((b) =>
+    (!favOnly || b.favorite) &&
     (fType === 'all' || b.type === fType) &&
     (fStatus === 'all' || b.status === fStatus) &&
     (fCategory === 'all' || b.category === fCategory) &&
@@ -131,6 +140,9 @@ export function BidPages() {
             <option value="all">Todas las categorías</option>
             {categories.map((c) => <option key={c} value={c}>{c}</option>)}
           </Select>
+          <button onClick={() => setFavOnly((v) => !v)} className={cn('flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition', favOnly ? 'bg-amber-500/15 text-amber-200 border-amber-400/30' : 'bg-violet-950/50 text-violet-300/70 border-violet-400/20 hover:border-amber-400/30')}>
+            <Star size={15} className={favOnly ? 'fill-amber-300 text-amber-300' : ''} /> Favoritas{favCount > 0 ? ` (${favCount})` : ''}
+          </button>
         </div>
         <div className="flex gap-2">
           <Button variant="primary" onClick={() => { setBulkStep('input'); setBulkText(''); setBulkPreview([]); setBulkOpen(true) }}><Sparkles size={16} /> Subir Bid Pages con IA</Button>
@@ -156,6 +168,7 @@ export function BidPages() {
                   </div>
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                  <button onClick={() => toggleFav(b.id, b.favorite)} className={cn('p-1 transition', b.favorite ? 'text-amber-300' : 'text-violet-300 hover:text-amber-300')}><Star size={13} className={b.favorite ? 'fill-amber-300' : ''} /></button>
                   <button onClick={() => { setDetail(b); setDetailOpen(true) }} className="p-1 text-violet-300 hover:text-fuchsia-400 transition"><Eye size={13} /></button>
                   <button onClick={() => edit(b)} className="p-1 text-violet-300 hover:text-fuchsia-400 transition"><Pencil size={13} /></button>
                   <button onClick={() => remove(b.id)} className="p-1 text-violet-300 hover:text-rose-400 transition"><Trash2 size={13} /></button>
