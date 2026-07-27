@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, User, Building2, FileText, Wallet, Wrench, Truck,
-  Landmark, Users, ShieldCheck, Gauge, Layers, Sparkles, LogOut,
+  Landmark, Users, ShieldCheck, Gauge, Layers, Sparkles, LogOut, Bot,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useAuth } from '../lib/auth'
@@ -12,6 +12,7 @@ const nav = [
   { to: '/app/profile', label: 'Perfil Personal', icon: User },
   { to: '/app/companies', label: 'Perfil Empresarial', icon: Building2 },
   { to: '/app/contracts', label: 'Contratos', icon: FileText },
+  { to: '/app/assistant', label: 'Orbe AI', icon: Bot },
   { to: '/app/wallet', label: 'Wallet', icon: Wallet },
   { to: '/app/tools', label: 'Herramientas & Docs', icon: Wrench },
   { to: '/app/suppliers', label: 'Net 30 & Proveedores', icon: Truck },

@@ -15,6 +15,7 @@ import { Investors } from './pages/Investors'
 import { Insurers } from './pages/Insurers'
 import { Risk } from './pages/Risk'
 import { Pools } from './pages/Pools'
+import { AIAssistant } from './pages/AIAssistant'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="insurers" element={<Insurers />} />
         <Route path="risk" element={<Risk />} />
         <Route path="pools" element={<Pools />} />
+        <Route path="assistant" element={<AIAssistant />} />
       </Route>
       <Route path="*" element={<Navigate to="/app" replace />} />
     </Routes>
