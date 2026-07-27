@@ -5,7 +5,6 @@ import { Dashboard } from './pages/Dashboard'
 import { Contracts } from './pages/Contracts'
 import { Suppliers } from './pages/Suppliers'
 import { Wallet } from './pages/Wallet'
-import { AIAssistant } from './pages/AIAssistant'
 import { Sidebar } from './components/Sidebar'
 import { PrivateBidding } from './pages/PrivateBidding'
 import { BidPages } from './pages/BidPages'
@@ -43,7 +42,6 @@ function Shell() {
           <Route path="/app/tools" element={<Tools />} />
           <Route path="/app/documents" element={<Documents />} />
           <Route path="/app/risk" element={<Risk />} />
-          <Route path="/app/ai" element={<AIAssistant />} />
           <Route path="*" element={<Navigate to="/app" replace />} />
         </Routes>
       </main>

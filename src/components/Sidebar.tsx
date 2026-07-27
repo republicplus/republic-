@@ -43,12 +43,6 @@ const NAV_SECTIONS: { label: string; items: { to: string; label: string; icon: a
       { to: '/app/risk', label: 'Análisis de Riesgo', icon: Crown },
     ],
   },
-  {
-    label: 'Asistente',
-    items: [
-      { to: '/app/ai', label: 'Orbe AI', icon: Sparkles },
-    ],
-  },
 ]
 
 export function Sidebar() {
