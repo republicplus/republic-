@@ -122,8 +122,18 @@ Deno.serve(async (req: Request) => {
       { role: "user", content: question },
     ];
 
-    const apiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!apiKey) {
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    const { data: secretRow, error: secretErr } = await serviceClient
+      .from("decrypted_secrets")
+      .select("decrypted_secret")
+      .eq("name", "OPENAI_API_KEY")
+      .maybeSingle();
+
+    const apiKey = (secretRow as any)?.decrypted_secret;
+    if (!apiKey || secretErr) {
       return new Response(JSON.stringify({ error: "OpenAI API key no configurada" }), {
         status: 503,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
