@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle } from '../components/ui'
-import { Plus, ExternalLink, Search, Trash2, Link2, Wrench, FileText, Pencil } from 'lucide-react'
+import { useAuth } from '../lib/auth'
+import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState } from '../components/ui'
+import { Plus, ExternalLink, Search, Trash2, Link2, Wrench, FileText, Pencil, Sparkles, Loader as Loader2 } from 'lucide-react'
 import { cn } from '../lib/utils'
 
 type LinkItem = {
@@ -18,12 +19,16 @@ const DEFAULT_LINKS = [
 ]
 
 export function Tools() {
+  const { session } = useAuth()
   const [links, setLinks] = useState<LinkItem[]>([])
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<'all' | 'bid' | 'tool'>('all')
   const [open, setOpen] = useState(false)
+  const [aiOpen, setAiOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [draft, setDraft] = useState({ name: '', url: '', description: '', category: 'tool' })
+  const [aiUrl, setAiUrl] = useState('')
+  const [aiCategory, setAiCategory] = useState('tool')
+  const [aiBusy, setAiBusy] = useState(false)
 
   useEffect(() => { load() }, [])
 
@@ -32,7 +37,6 @@ export function Tools() {
     if (data && data.length > 0) {
       setLinks(data)
     } else if (data && data.length === 0) {
-      // seed defaults for first-time user
       const inserts = DEFAULT_LINKS.map((l) => ({ name: l.name, url: l.url, description: l.desc, category: l.category }))
       const { data: seeded } = await supabase.from('tools_links').insert(inserts).select()
       if (seeded) setLinks(seeded)
@@ -67,54 +71,88 @@ export function Tools() {
     setOpen(false); setEditId(null); setDraft({ name: '', url: '', description: '', category: 'tool' })
   }
 
-  const filtered = links.filter((l) =>
-    (filter === 'all' || l.category === filter) &&
-    (l.name.toLowerCase().includes(search.toLowerCase()) || l.url.toLowerCase().includes(search.toLowerCase()))
-  )
+  async function aiCreateFromLink() {
+    if (!aiUrl.trim()) return
+    setAiBusy(true)
+    try {
+      const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`
+      const res = await fetch(fnUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({
+          question: `Crea un link de categoría ${aiCategory} a partir de este enlace web`,
+          mode: 'create',
+          linkUrl: aiUrl,
+        }),
+      })
+      if (!res.ok) throw new Error('Error al crear con AI')
+      const data = await res.json()
+      if (data.record) setLinks((l) => [data.record, ...l])
+      setAiOpen(false); setAiUrl(''); setAiCategory('tool')
+    } catch (err: any) {
+      alert('Error: ' + err.message)
+    } finally {
+      setAiBusy(false)
+    }
+  }
 
-  const bidLinks = filtered.filter((l) => l.category === 'bid')
-  const toolLinks = filtered.filter((l) => l.category === 'tool')
+  const bidLinks = links.filter((l) => l.category === 'bid' && (l.name.toLowerCase().includes(search.toLowerCase()) || l.url.toLowerCase().includes(search.toLowerCase())))
+  const toolLinks = links.filter((l) => l.category === 'tool' && (l.name.toLowerCase().includes(search.toLowerCase()) || l.url.toLowerCase().includes(search.toLowerCase())))
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-950/50 border border-violet-400/20 text-sm text-violet-300/70">
-            <Search size={15} />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar link…" className="bg-transparent outline-none w-48 placeholder:text-violet-400/40" />
-          </div>
-          <Select value={filter} onChange={(e) => setFilter(e.target.value as any)} className="w-auto">
-            <option value="all">Todos</option>
-            <option value="bid">Bid Pages</option>
-            <option value="tool">Tools Links</option>
-          </Select>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-950/50 border border-violet-400/20 text-sm text-violet-300/70">
+          <Search size={15} />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar link…" className="bg-transparent outline-none w-56 placeholder:text-violet-400/40" />
         </div>
-        <Button variant="gold" onClick={() => { setEditId(null); setDraft({ name: '', url: '', description: '', category: 'tool' }); setOpen(true) }}><Plus size={16} /> Nuevo Link</Button>
+        <div className="flex gap-2">
+          <Button variant="primary" onClick={() => setAiOpen(true)}><Sparkles size={16} /> Crear con AI</Button>
+          <Button variant="gold" onClick={() => { setEditId(null); setDraft({ name: '', url: '', description: '', category: 'tool' }); setOpen(true) }}><Plus size={16} /> Nuevo Link</Button>
+        </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <Card><EmptyState icon={<Link2 size={22} />} title="Sin links" subtitle="Agrega páginas de licitación o herramientas con su link web." action={<Button variant="gold" onClick={() => setOpen(true)}><Plus size={16} /> Agregar Link</Button>} /></Card>
-      ) : (
-        <>
-          {(filter === 'all' || filter === 'bid') && bidLinks.length > 0 && (
-            <Card className="p-6">
-              <SectionTitle title="Bid Pages" subtitle="Portales de licitación y oportunidades" />
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {bidLinks.map((l) => <LinkCard key={l.id} link={l} onEdit={() => edit(l)} onDelete={() => remove(l.id)} />)}
-              </div>
-            </Card>
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Bid Pages */}
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-fuchsia-500/10 flex items-center justify-center text-fuchsia-400 neon-border"><FileText size={16} /></div>
+            <div>
+              <h3 className="font-semibold text-violet-100">Bid Pages</h3>
+              <p className="text-xs text-violet-300/70">Portales de licitación</p>
+            </div>
+            <Badge tone="gold" >{bidLinks.length}</Badge>
+          </div>
+          {bidLinks.length === 0 ? (
+            <p className="text-sm text-violet-300/70 text-center py-6">Sin bid pages</p>
+          ) : (
+            <div className="space-y-2">
+              {bidLinks.map((l) => <LinkRow key={l.id} link={l} onEdit={() => edit(l)} onDelete={() => remove(l.id)} />)}
+            </div>
           )}
-          {(filter === 'all' || filter === 'tool') && toolLinks.length > 0 && (
-            <Card className="p-6">
-              <SectionTitle title="Tools Links" subtitle="Herramientas y recursos" />
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {toolLinks.map((l) => <LinkCard key={l.id} link={l} onEdit={() => edit(l)} onDelete={() => remove(l.id)} />)}
-              </div>
-            </Card>
-          )}
-        </>
-      )}
+        </Card>
 
+        {/* Tools Links */}
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-300 neon-border"><Wrench size={16} /></div>
+            <div>
+              <h3 className="font-semibold text-violet-100">Tools Links</h3>
+              <p className="text-xs text-violet-300/70">Herramientas y recursos</p>
+            </div>
+            <Badge tone="info">{toolLinks.length}</Badge>
+          </div>
+          {toolLinks.length === 0 ? (
+            <p className="text-sm text-violet-300/70 text-center py-6">Sin tools links</p>
+          ) : (
+            <div className="space-y-2">
+              {toolLinks.map((l) => <LinkRow key={l.id} link={l} onEdit={() => edit(l)} onDelete={() => remove(l.id)} />)}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      {/* Manual modal */}
       <Modal open={open} onClose={close} title={editId ? 'Editar link' : 'Nuevo link'}>
         <div className="space-y-4">
           <Input label="Nombre" value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} placeholder="Ej. SAM.gov" />
@@ -130,29 +168,44 @@ export function Tools() {
           </div>
         </div>
       </Modal>
+
+      {/* AI modal */}
+      <Modal open={aiOpen} onClose={() => setAiOpen(false)} title="Crear link con AI">
+        <div className="space-y-4">
+          <p className="text-sm text-violet-300/70">Pega el enlace web y la AI extraerá el nombre y descripción automáticamente.</p>
+          <Input label="URL del enlace" value={aiUrl} onChange={(e) => setAiUrl(e.target.value)} placeholder="https://sam.gov" />
+          <Select label="Categoría" value={aiCategory} onChange={(e) => setAiCategory(e.target.value)}>
+            <option value="tool">Tool Link</option>
+            <option value="bid">Bid Page</option>
+          </Select>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setAiOpen(false)}>Cancelar</Button>
+            <Button variant="gold" onClick={aiCreateFromLink} disabled={aiBusy || !aiUrl.trim()}>
+              {aiBusy ? <><Loader2 size={16} className="animate-spin" /> Extrayendo…</> : <><Sparkles size={16} /> Crear con AI</>}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
 
-function LinkCard({ link, onEdit, onDelete }: { link: LinkItem; onEdit: () => void; onDelete: () => void }) {
-  const Icon = link.category === 'bid' ? FileText : Wrench
+function LinkRow({ link, onEdit, onDelete }: { link: LinkItem; onEdit: () => void; onDelete: () => void }) {
   return (
-    <div className="group p-4 rounded-xl border border-violet-400/20 hover:border-fuchsia-400/40 hover:bg-violet-500/5 transition">
-      <div className="flex items-start justify-between">
-        <div className="w-9 h-9 rounded-lg bg-violet-500/10 flex items-center justify-center text-fuchsia-400 neon-border">
-          <Icon size={16} />
-        </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-          <button onClick={onEdit} className="p-1 text-violet-300 hover:text-fuchsia-400 transition"><Pencil size={13} /></button>
-          <button onClick={onDelete} className="p-1 text-violet-300 hover:text-rose-400 transition"><Trash2 size={13} /></button>
-        </div>
+    <div className="group flex items-center gap-3 p-3 rounded-xl border border-violet-400/15 hover:border-fuchsia-400/30 hover:bg-violet-500/5 transition">
+      <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center text-fuchsia-400 shrink-0">
+        <Link2 size={14} />
       </div>
-      <a href={link.url} target="_blank" rel="noreferrer" className="block mt-3">
-        <div className="text-sm font-medium text-violet-100 hover:text-fuchsia-300 transition flex items-center gap-1">
-          {link.name} <ExternalLink size={12} className="opacity-50" />
+      <a href={link.url} target="_blank" rel="noreferrer" className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-violet-100 hover:text-fuchsia-300 transition flex items-center gap-1 truncate">
+          {link.name} <ExternalLink size={11} className="opacity-50 shrink-0" />
         </div>
-        <div className="text-xs text-violet-300/70 mt-1">{link.description || link.url}</div>
+        <div className="text-xs text-violet-300/70 truncate">{link.description || link.url}</div>
       </a>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
+        <button onClick={onEdit} className="p-1 text-violet-300 hover:text-fuchsia-400 transition"><Pencil size={13} /></button>
+        <button onClick={onDelete} className="p-1 text-violet-300 hover:text-rose-400 transition"><Trash2 size={13} /></button>
+      </div>
     </div>
   )
 }

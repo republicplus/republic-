@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Card, Button, EmptyState } from '../components/ui'
 import { AIOrb } from '../components/AIOrb'
-import { Sparkles, Send, Plus, MessageSquare, Trash2, FileText } from 'lucide-react'
+import { Sparkles, Send, Plus, MessageSquare, Trash2, FileText, Upload, Loader as Loader2, Paperclip } from 'lucide-react'
 import { cn } from '../lib/utils'
 
 type Msg = { id: string; role: 'user' | 'assistant'; content: string }
@@ -24,7 +24,11 @@ export function AIAssistant() {
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [attachedFile, setAttachedFile] = useState<File | null>(null)
+  const [attachedImageUrl, setAttachedImageUrl] = useState<string | null>(null)
+  const [attachedFileUrl, setAttachedFileUrl] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { loadChats() }, [])
 
@@ -63,8 +67,25 @@ export function AIAssistant() {
   }
 
   async function ask(question: string) {
-    if (!question.trim() || busy) return
+    if ((!question.trim() && !attachedFile) || busy) return
     setError(null)
+
+    let imageUrl = attachedImageUrl
+    let fileUrl = attachedFileUrl
+    let fileType = attachedFile?.type
+
+    // Upload PDF to storage if needed
+    if (attachedFile && attachedFile.type === 'application/pdf' && !fileUrl) {
+      const ext = attachedFile.name.split('.').pop()
+      const path = `ai-uploads/${crypto.randomUUID()}.${ext}`
+      const { error: upErr } = await supabase.storage.from('documents').upload(path, attachedFile)
+      if (!upErr) {
+        const { data: pub } = supabase.storage.from('documents').getPublicUrl(path)
+        fileUrl = pub.publicUrl
+      }
+    }
+
+    const q = question.trim() || 'Analiza este documento y dame un resumen completo.'
 
     let chatId = activeChat
     if (!chatId) {
@@ -77,14 +98,15 @@ export function AIAssistant() {
     } else {
       const chat = chats.find((c) => c.id === chatId)
       if (chat && chat.title === 'Nueva consulta') {
-        await supabase.from('ai_chats').update({ title: question.slice(0, 50), updated_at: new Date().toISOString() }).eq('id', chatId)
-        setChats((cs) => cs.map((c) => c.id === chatId ? { ...c, title: question.slice(0, 50) } : c))
+        await supabase.from('ai_chats').update({ title: q.slice(0, 50), updated_at: new Date().toISOString() }).eq('id', chatId)
+        setChats((cs) => cs.map((c) => c.id === chatId ? { ...c, title: q.slice(0, 50) } : c))
       }
     }
 
-    const userMsg: Msg = { id: crypto.randomUUID(), role: 'user', content: question }
+    const userMsg: Msg = { id: crypto.randomUUID(), role: 'user', content: q + (attachedFile ? ` \n📎 ${attachedFile.name}` : '') }
     setMessages((m) => [...m, userMsg])
     setInput('')
+    setAttachedFile(null); setAttachedImageUrl(null); setAttachedFileUrl(null)
     setBusy(true)
 
     try {
@@ -96,8 +118,11 @@ export function AIAssistant() {
           Authorization: `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({
-          question,
+          question: q,
           history: messages.map((m) => ({ role: m.role, content: m.content })),
+          imageUrl,
+          fileUrl,
+          fileType,
         }),
       })
 
@@ -114,7 +139,7 @@ export function AIAssistant() {
 
       if (chatId) {
         await supabase.from('ai_messages').insert([
-          { chat_id: chatId, role: 'user', content: question },
+          { chat_id: chatId, role: 'user', content: q },
           { chat_id: chatId, role: 'assistant', content: answer },
         ])
         await supabase.from('ai_chats').update({ updated_at: new Date().toISOString() }).eq('id', chatId)
@@ -201,20 +226,40 @@ export function AIAssistant() {
             </div>
           )}
 
-          {error && <div className="px-5 py-2 text-sm text-error-600 bg-red-50 border-t border-red-100">{error}</div>}
+          {error && <div className="px-5 py-2 text-sm text-rose-300 bg-rose-500/10 border-t border-rose-400/20">{error}</div>}
 
           <div className="border-t border-violet-400/15 p-4">
+            {attachedFile && (
+              <div className="mb-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-500/10 border border-violet-400/20 text-sm text-violet-200">
+                <Paperclip size={14} className="text-fuchsia-400" />
+                <span className="truncate flex-1">{attachedFile.name}</span>
+                <button onClick={() => { setAttachedFile(null); setAttachedImageUrl(null); setAttachedFileUrl(null) }} className="text-violet-300 hover:text-rose-400 transition">×</button>
+              </div>
+            )}
             <div className="flex gap-2">
+              <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (!f) return
+                setAttachedFile(f)
+                if (f.type.startsWith('image/')) {
+                  const reader = new FileReader()
+                  reader.onload = () => setAttachedImageUrl(reader.result as string)
+                  reader.readAsDataURL(f)
+                }
+              }} />
+              <button onClick={() => fileRef.current?.click()} className="w-10 h-10 rounded-xl border border-violet-400/20 bg-violet-950/40 flex items-center justify-center text-violet-300 hover:text-fuchsia-400 hover:border-fuchsia-400/40 transition shrink-0" title="Subir imagen o PDF">
+                <Upload size={16} />
+              </button>
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), ask(input))}
-                placeholder="Escribe tu pregunta sobre contratos…"
+                placeholder="Escribe tu pregunta o sube un documento…"
                 disabled={busy}
                 className="flex-1 px-4 py-2.5 rounded-xl border border-violet-400/20 bg-violet-950/40 text-sm text-violet-50 placeholder:text-violet-400/40 focus:outline-none focus:ring-2 focus:ring-fuchsia-400/40 focus:border-fuchsia-400/50 transition disabled:opacity-50"
               />
-              <Button variant="gold" onClick={() => ask(input)} disabled={busy || !input.trim()}>
-                <Send size={16} />
+              <Button variant="gold" onClick={() => ask(input)} disabled={busy || (!input.trim() && !attachedFile)}>
+                {busy ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
               </Button>
             </div>
           </div>

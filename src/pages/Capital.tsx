@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState } from '../components/ui'
-import { Plus, Landmark, Star, Search, Trash2, Pencil } from 'lucide-react'
+import { Plus, Landmark, Star, Search, Trash2, Pencil, Sparkles, Loader as Loader2, Link2 } from 'lucide-react'
 import { cn, formatCurrency } from '../lib/utils'
+import { useAuth } from '../lib/auth'
 
 const TYPES = ['Banco','Lender','Private Lender','Hard Money','MCA','Factoring','Purchase Order Financing','Invoice Financing','Supply Chain Financing','Equipment Financing','SBA','Business Credit','Línea de Crédito']
 
 export function Capital() {
+  const { session } = useAuth()
   const [providers, setProviders] = useState<any[]>([])
   const [open, setOpen] = useState(false)
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiUrl, setAiUrl] = useState('')
+  const [aiBusy, setAiBusy] = useState(false)
   const [draft, setDraft] = useState<any>({ name: '', type: 'Banco', favorite: false })
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
@@ -27,6 +32,27 @@ export function Capital() {
     await supabase.from('capital_providers').update({ favorite: !fav }).eq('id', id); load()
   }
   async function remove(id: string) { await supabase.from('capital_providers').delete().eq('id', id); load() }
+
+  async function aiCreateFromLink() {
+    if (!aiUrl.trim()) return
+    setAiBusy(true)
+    try {
+      const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`
+      const res = await fetch(fnUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ question: 'Crea una fuente de capital (provider) a partir de este enlace', mode: 'create', linkUrl: aiUrl }),
+      })
+      if (!res.ok) throw new Error('Error al crear con AI')
+      const data = await res.json()
+      if (data.record) load()
+      setAiOpen(false); setAiUrl('')
+    } catch (err: any) {
+      alert('Error: ' + err.message)
+    } finally {
+      setAiBusy(false)
+    }
+  }
 
   const filtered = providers.filter((p) =>
     (filter === 'all' || p.type === filter || (filter === 'fav' && p.favorite)) &&
@@ -47,7 +73,10 @@ export function Capital() {
             <option value="fav">Favoritos</option>
           </Select>
         </div>
-        <Button variant="gold" onClick={() => { setDraft({ name: '', type: 'Banco', favorite: false }); setOpen(true) }}><Plus size={16} /> Nuevo</Button>
+        <div className="flex gap-2">
+          <Button variant="primary" onClick={() => setAiOpen(true)}><Sparkles size={16} /> Crear con AI</Button>
+          <Button variant="gold" onClick={() => { setDraft({ name: '', type: 'Banco', favorite: false }); setOpen(true) }}><Plus size={16} /> Nuevo</Button>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
@@ -101,6 +130,22 @@ export function Capital() {
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button>
             <Button variant="gold" onClick={save} disabled={!draft.name}>Guardar</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={aiOpen} onClose={() => setAiOpen(false)} title="Crear fuente de capital con AI">
+        <div className="space-y-4">
+          <p className="text-sm text-violet-300/70">Pega el enlace de la empresa o persona y la AI extraerá la información automáticamente.</p>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-950/50 border border-violet-400/20">
+            <Link2 size={15} className="text-fuchsia-400" />
+            <input value={aiUrl} onChange={(e) => setAiUrl(e.target.value)} placeholder="https://…" className="flex-1 bg-transparent outline-none text-sm text-violet-50 placeholder:text-violet-400/40" />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setAiOpen(false)}>Cancelar</Button>
+            <Button variant="gold" onClick={aiCreateFromLink} disabled={aiBusy || !aiUrl.trim()}>
+              {aiBusy ? <><Loader2 size={16} className="animate-spin" /> Extrayendo…</> : <><Sparkles size={16} /> Crear con AI</>}
+            </Button>
           </div>
         </div>
       </Modal>

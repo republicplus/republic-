@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { AIOrb } from '../components/AIOrb'
 import { Card, Button, Badge, Input } from '../components/ui'
-import { Plus, Send, Save, Folder, Search, MessageSquare, Sparkles, Trash2 } from 'lucide-react'
+import { Plus, Send, Save, Folder, Search, MessageSquare, Sparkles, Trash2, Wallet as WalletIcon, TrendingUp, ArrowDownRight, Clock, CreditCard, Package } from 'lucide-react'
 import { cn, formatCurrency, formatDate, daysUntil } from '../lib/utils'
 
 interface Chat { id: string; title: string; folder: string | null; updated_at: string }
@@ -41,6 +41,8 @@ export function Dashboard() {
   const [thinking, setThinking] = useState(false)
   const [contracts, setContracts] = useState<any[]>([])
   const [wallet, setWallet] = useState<any[]>([])
+  const [capitalSources, setCapitalSources] = useState<any[]>([])
+  const [invoices, setInvoices] = useState<any[]>([])
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { loadChats(); loadDashboard() }, [])
@@ -62,6 +64,10 @@ export function Dashboard() {
     if (c) setContracts(c)
     const { data: w } = await supabase.from('wallet_transactions').select('*').order('date', { ascending: false }).limit(5)
     if (w) setWallet(w)
+    const { data: caps } = await supabase.from('capital_sources').select('*')
+    if (caps) setCapitalSources(caps)
+    const { data: inv } = await supabase.from('contract_invoices').select('*').eq('status','pending')
+    if (inv) setInvoices(inv)
   }
 
   async function newChat() {
@@ -108,6 +114,22 @@ export function Dashboard() {
   const totalValue = activeContracts.reduce((s, c) => s + (c.total_value || 0), 0)
   const pendingValue = pending.reduce((s, c) => s + (c.total_value || 0), 0)
 
+  const availableCapital = capitalSources.reduce((s, c) => s + (c.available_amount || 0), 0)
+  const projectedProfit = contracts.reduce((s, c) => s + (c.estimated_profit || (c.fixed_profit || (c.total_value * (c.profit_pct || 0) / 100) || 0)), 0)
+  const receivedProfit = wallet.filter((t) => t.amount > 0 && t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  const receivable = invoices.filter((i) => i.status !== 'paid').reduce((s, i) => s + (i.amount || 0), 0)
+  const payable = wallet.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0)
+  const totalContractValue = contracts.reduce((s, c) => s + (c.total_value || 0), 0)
+
+  const finKpis = [
+    { label: 'Capital Disponible', value: formatCurrency(availableCapital), icon: WalletIcon, tone: 'gold' as const },
+    { label: 'Ganancia Proyectada', value: formatCurrency(projectedProfit), icon: TrendingUp, tone: 'success' as const },
+    { label: 'Ganancia Recibida', value: formatCurrency(receivedProfit), icon: ArrowDownRight, tone: 'info' as const },
+    { label: 'Por Cobrar', value: formatCurrency(receivable), icon: Clock, tone: 'warning' as const },
+    { label: 'Por Pagar', value: formatCurrency(payable), icon: CreditCard, tone: 'error' as const },
+    { label: 'Valor Total Contratos', value: formatCurrency(totalContractValue), icon: Package, tone: 'neutral' as const },
+  ]
+
   const kpis = [
     { label: 'Contratos Activos', value: activeContracts.length.toString(), tone: 'success' as const, sub: formatCurrency(totalValue) },
     { label: 'Licitaciones Pendientes', value: pending.length.toString(), tone: 'warning' as const, sub: formatCurrency(pendingValue) },
@@ -116,6 +138,24 @@ export function Dashboard() {
   ]
 
   return (
+    <div className="space-y-6">
+      {/* Financial summary cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {finKpis.map((k) => {
+          const Icon = k.icon
+          return (
+            <Card key={k.label} hover className="p-5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-violet-300/70">{k.label}</span>
+                <Icon size={16} className="text-fuchsia-400" />
+              </div>
+              <div className="font-display text-xl font-bold text-violet-100 mt-2">{k.value}</div>
+              <div className="mt-2"><Badge tone={k.tone}>•</Badge></div>
+            </Card>
+          )
+        })}
+      </div>
+
     <div className="grid grid-cols-12 gap-6">
       {/* AI section */}
       <div className="col-span-12 xl:col-span-8 space-y-6">
@@ -251,6 +291,7 @@ export function Dashboard() {
           </div>
         </Card>
       </div>
+    </div>
     </div>
   )
 }
