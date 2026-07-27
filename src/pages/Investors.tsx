@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle } from '../components/ui'
-import { Plus, Users, Trash2, Pencil, Search, ArrowRight } from 'lucide-react'
+import { Plus, Users, Trash2, Pencil, Search, ArrowRight, Sparkles } from 'lucide-react'
 import { cn, formatCurrency, formatDate, initials } from '../lib/utils'
+import { useAICreate } from '../lib/useAICreate'
 
 const SPLIT_MODELS = ['50/50','60/40','70/30','80/20','Personalizado']
 const RISK_LEVELS = ['Bajo','Medio','Alto']
@@ -17,6 +18,9 @@ export function Investors() {
   const [draftInv, setDraftInv] = useState<any>({ first_name: '', last_name: '', status: 'active' })
   const [draftOpp, setDraftOpp] = useState<any>({ title: '', split_model: '50/50', risk: 'Medio', status: 'open' })
   const [search, setSearch] = useState('')
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const { create, busy } = useAICreate()
 
   useEffect(() => { load() }, [])
   async function load() {
@@ -38,14 +42,20 @@ export function Investors() {
   async function removeInv(id: string) { await supabase.from('investors').delete().eq('id', id); load() }
   async function removeOpp(id: string) { await supabase.from('opportunities').delete().eq('id', id); load() }
 
+  async function aiCreate() {
+    if (!aiPrompt.trim()) return
+    const result = await create(aiPrompt)
+    if (result.ok) { setAiOpen(false); setAiPrompt(''); load() }
+  }
+
   const filteredInv = investors.filter((i) => `${i.first_name} ${i.last_name}`.toLowerCase().includes(search.toLowerCase()) || i.email?.toLowerCase().includes(search.toLowerCase()))
   const totalAvailable = investors.reduce((s, i) => s + (i.available_capital || 0), 0)
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-1 border-b border-line">
+      <div className="flex items-center gap-1 border-b border-violet-400/15">
         {(['crm','opportunities'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={cn('px-4 py-2.5 text-sm font-medium border-b-2 transition', tab === t ? 'border-navy-900 text-navy-900' : 'border-transparent text-muted hover:text-navy-700')}>
+          <button key={t} onClick={() => setTab(t)} className={cn('px-4 py-2.5 text-sm font-medium border-b-2 transition', tab === t ? 'border-fuchsia-400 text-fuchsia-200' : 'border-transparent text-violet-300/70 hover:text-violet-100')}>
             {t === 'crm' ? 'CRM de Inversionistas' : 'Oportunidades de Inversión'}
           </button>
         ))}
@@ -55,13 +65,16 @@ export function Investors() {
         <>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-line text-sm text-muted">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-950/50 border border-violet-400/20 text-sm text-violet-300/70">
                 <Search size={15} />
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar inversionista…" className="bg-transparent outline-none w-44" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar inversionista…" className="bg-transparent outline-none w-44 placeholder:text-violet-400/40" />
               </div>
               <Badge tone="gold">Capital total: {formatCurrency(totalAvailable)}</Badge>
             </div>
-            <Button variant="gold" onClick={() => { setDraftInv({ first_name: '', last_name: '', status: 'active' }); setOpenInv(true) }}><Plus size={16} /> Nuevo Inversionista</Button>
+            <div className="flex gap-2">
+              <Button variant="primary" onClick={() => setAiOpen(true)}><Sparkles size={16} /> Crear con AI</Button>
+              <Button variant="gold" onClick={() => { setDraftInv({ first_name: '', last_name: '', status: 'active' }); setOpenInv(true) }}><Plus size={16} /> Nuevo Inversionista</Button>
+            </div>
           </div>
 
           {filteredInv.length === 0 ? (
@@ -72,21 +85,21 @@ export function Investors() {
                 <Card key={inv.id} hover className="p-5">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl navy-gradient flex items-center justify-center text-white text-sm font-semibold">{initials(inv.first_name, inv.last_name)}</div>
+                      <div className="w-10 h-10 rounded-xl navy-gradient flex items-center justify-center text-violet-100 text-sm font-semibold neon-border">{initials(inv.first_name, inv.last_name)}</div>
                       <div>
-                        <h3 className="font-semibold text-navy-900">{inv.first_name} {inv.last_name}</h3>
-                        <p className="text-xs text-muted">{inv.email || '—'}</p>
+                        <h3 className="font-semibold text-violet-100">{inv.first_name} {inv.last_name}</h3>
+                        <p className="text-xs text-violet-300/70">{inv.email || '—'}</p>
                       </div>
                     </div>
                     <Badge tone={inv.status === 'active' ? 'success' : 'neutral'}>{inv.status}</Badge>
                   </div>
                   <div className="grid grid-cols-2 gap-1.5 mt-4 text-xs">
-                    <div><span className="text-muted">Capital:</span> <span className="font-semibold text-navy-900">{formatCurrency(inv.available_capital)}</span></div>
-                    <div><span className="text-muted">Máximo:</span> <span className="text-navy-800">{formatCurrency(inv.max_capital)}</span></div>
-                    <div><span className="text-muted">Tel:</span> <span className="text-navy-800">{inv.phone || '—'}</span></div>
-                    <div><span className="text-muted">Empresa:</span> <span className="text-navy-800">{inv.company || '—'}</span></div>
+                    <div><span className="text-violet-300/70">Capital:</span> <span className="font-semibold text-violet-100">{formatCurrency(inv.available_capital)}</span></div>
+                    <div><span className="text-violet-300/70">Máximo:</span> <span className="text-violet-200">{formatCurrency(inv.max_capital)}</span></div>
+                    <div><span className="text-violet-300/70">Tel:</span> <span className="text-violet-200">{inv.phone || '—'}</span></div>
+                    <div><span className="text-violet-300/70">Empresa:</span> <span className="text-violet-200">{inv.company || '—'}</span></div>
                   </div>
-                  {inv.interests && <p className="text-xs text-muted mt-3 line-clamp-2">{inv.interests}</p>}
+                  {inv.interests && <p className="text-xs text-violet-300/70 mt-3 line-clamp-2">{inv.interests}</p>}
                   <div className="flex gap-2 mt-4">
                     <Button variant="secondary" size="sm" onClick={() => { setDraftInv(inv); setOpenInv(true) }}><Pencil size={13} /> Editar</Button>
                     <Button variant="danger" size="sm" onClick={() => removeInv(inv.id)}><Trash2 size={13} /></Button>
@@ -111,17 +124,17 @@ export function Investors() {
               {opps.map((o) => (
                 <Card key={o.id} hover className="p-6">
                   <div className="flex items-start justify-between">
-                    <h3 className="font-semibold text-navy-900 text-lg">{o.title}</h3>
+                    <h3 className="font-semibold text-violet-100 text-lg">{o.title}</h3>
                     <Badge tone={OPP_STATUS[o.status] || 'neutral'}>{o.status}</Badge>
                   </div>
-                  {o.description && <p className="text-sm text-muted mt-2">{o.description}</p>}
+                  {o.description && <p className="text-sm text-violet-300/70 mt-2">{o.description}</p>}
                   <div className="grid grid-cols-2 gap-3 mt-5 text-sm">
-                    <div><span className="text-muted text-xs">Valor total:</span> <div className="font-semibold text-navy-900">{formatCurrency(o.total_value)}</div></div>
-                    <div><span className="text-muted text-xs">Capital requerido:</span> <div className="font-semibold text-navy-900">{formatCurrency(o.capital_required)}</div></div>
-                    <div><span className="text-muted text-xs">Reparto:</span> <div className="text-navy-800">{o.split_model}</div></div>
-                    <div><span className="text-muted text-xs">Riesgo:</span> <div><Badge tone={o.risk === 'Bajo' ? 'success' : o.risk === 'Alto' ? 'error' : 'warning'}>{o.risk}</Badge></div></div>
-                    <div><span className="text-muted text-xs">Adjudicación:</span> <div className="text-navy-800">{formatDate(o.expected_award_date)}</div></div>
-                    <div><span className="text-muted text-xs">Retorno est.:</span> <div className="text-navy-800">{o.estimated_return_time || '—'}</div></div>
+                    <div><span className="text-violet-300/70 text-xs">Valor total:</span> <div className="font-semibold text-violet-100">{formatCurrency(o.total_value)}</div></div>
+                    <div><span className="text-violet-300/70 text-xs">Capital requerido:</span> <div className="font-semibold text-violet-100">{formatCurrency(o.capital_required)}</div></div>
+                    <div><span className="text-violet-300/70 text-xs">Reparto:</span> <div className="text-violet-200">{o.split_model}</div></div>
+                    <div><span className="text-violet-300/70 text-xs">Riesgo:</span> <div><Badge tone={o.risk === 'Bajo' ? 'success' : o.risk === 'Alto' ? 'error' : 'warning'}>{o.risk}</Badge></div></div>
+                    <div><span className="text-violet-300/70 text-xs">Adjudicación:</span> <div className="text-violet-200">{formatDate(o.expected_award_date)}</div></div>
+                    <div><span className="text-violet-300/70 text-xs">Retorno est.:</span> <div className="text-violet-200">{o.estimated_return_time || '—'}</div></div>
                   </div>
                   <div className="flex gap-2 mt-5">
                     <Button variant="gold" size="sm">Aplicar para invertir</Button>
@@ -186,6 +199,17 @@ export function Investors() {
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={() => setOpenOpp(false)}>Cancelar</Button>
             <Button variant="gold" onClick={saveOpp} disabled={!draftOpp.title}>Publicar</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={aiOpen} onClose={() => setAiOpen(false)} title="Crear inversionista con AI">
+        <div className="space-y-4">
+          <p className="text-sm text-violet-300/70">Describe al inversionista y la AI lo creará automáticamente.</p>
+          <Textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} placeholder="Ej: Crea un inversionista llamado Juan Pérez, email juan@email.com, capital disponible 500000, intereses en contratos federales" />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setAiOpen(false)}>Cancelar</Button>
+            <Button variant="gold" onClick={aiCreate} disabled={busy || !aiPrompt.trim()}>{busy ? 'Creando…' : 'Crear con AI'}</Button>
           </div>
         </div>
       </Modal>

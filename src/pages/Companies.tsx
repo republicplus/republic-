@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { Card, Button, Input, Textarea, SectionTitle, Badge, Modal, EmptyState, Toggle } from '../components/ui'
-import { Building2, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Building2, Plus, Pencil, Trash2, Sparkles } from 'lucide-react'
+import { useAICreate } from '../lib/useAICreate'
 
 export function Companies() {
   const [companies, setCompanies] = useState<any[]>([])
   const [editing, setEditing] = useState<any | null>(null)
   const [open, setOpen] = useState(false)
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const { create, busy } = useAICreate()
 
   useEffect(() => { load() }, [])
 
@@ -31,6 +35,12 @@ export function Companies() {
     await supabase.from('companies').delete().eq('id', id); load()
   }
 
+  async function aiCreate() {
+    if (!aiPrompt.trim()) return
+    const result = await create(aiPrompt)
+    if (result.ok) { setAiOpen(false); setAiPrompt(''); load() }
+  }
+
   function set(k: string, v: any) { setEditing((e: any) => ({ ...e, [k]: v })) }
 
   const certs = ['small_business','minority_owned','woman_owned','veteran_owned','eight_a','hubzone','wosb','edwosb','sdvosb']
@@ -42,8 +52,11 @@ export function Companies() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <p className="text-sm text-muted">{companies.length} empresa(s) registrada(s)</p>
-        <Button variant="gold" onClick={openNew}><Plus size={16} /> Nueva Empresa</Button>
+        <p className="text-sm text-violet-300/70">{companies.length} empresa(s) registrada(s)</p>
+        <div className="flex gap-2">
+          <Button variant="primary" onClick={() => setAiOpen(true)}><Sparkles size={16} /> Crear con AI</Button>
+          <Button variant="gold" onClick={openNew}><Plus size={16} /> Nueva Empresa</Button>
+        </div>
       </div>
 
       {companies.length === 0 ? (
@@ -54,15 +67,15 @@ export function Companies() {
             <Card key={c.id} hover className="p-5">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-navy-50 flex items-center justify-center text-navy-600"><Building2 size={18} /></div>
+                  <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center text-fuchsia-400 neon-border"><Building2 size={18} /></div>
                   <div>
-                    <h3 className="font-semibold text-navy-900">{c.legal_name}</h3>
-                    {c.dba && <p className="text-xs text-muted">DBA: {c.dba}</p>}
+                    <h3 className="font-semibold text-violet-100">{c.legal_name}</h3>
+                    {c.dba && <p className="text-xs text-violet-300/70">DBA: {c.dba}</p>}
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={() => openEdit(c)} className="text-muted hover:text-navy-900 transition p-1.5"><Pencil size={15} /></button>
-                  <button onClick={() => remove(c.id)} className="text-muted hover:text-error-600 transition p-1.5"><Trash2 size={15} /></button>
+                  <button onClick={() => openEdit(c)} className="text-violet-300 hover:text-fuchsia-400 transition p-1.5"><Pencil size={15} /></button>
+                  <button onClick={() => remove(c.id)} className="text-violet-300 hover:text-rose-400 transition p-1.5"><Trash2 size={15} /></button>
                 </div>
               </div>
               <div className="flex flex-wrap gap-1.5 mt-3">
@@ -70,10 +83,10 @@ export function Companies() {
                 {c.sam_registration && <Badge tone="success">SAM Activo</Badge>}
               </div>
               <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
-                <div><span className="text-muted">UEI:</span> <span className="text-navy-800">{c.uei || '—'}</span></div>
-                <div><span className="text-muted">CAGE:</span> <span className="text-navy-800">{c.cage_code || '—'}</span></div>
-                <div><span className="text-muted">NAICS:</span> <span className="text-navy-800">{c.naics_codes || '—'}</span></div>
-                <div><span className="text-muted">SAM vence:</span> <span className="text-navy-800">{c.sam_expiration || '—'}</span></div>
+                <div><span className="text-violet-300/70">UEI:</span> <span className="text-violet-100">{c.uei || '—'}</span></div>
+                <div><span className="text-violet-300/70">CAGE:</span> <span className="text-violet-100">{c.cage_code || '—'}</span></div>
+                <div><span className="text-violet-300/70">NAICS:</span> <span className="text-violet-100">{c.naics_codes || '—'}</span></div>
+                <div><span className="text-violet-300/70">SAM vence:</span> <span className="text-violet-100">{c.sam_expiration || '—'}</span></div>
               </div>
             </Card>
           ))}
@@ -133,6 +146,17 @@ export function Companies() {
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal open={aiOpen} onClose={() => setAiOpen(false)} title="Crear empresa con AI">
+        <div className="space-y-4">
+          <p className="text-sm text-violet-300/70">Describe la empresa y la AI la creará automáticamente.</p>
+          <Textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} placeholder="Ej: Crea una empresa llamada Tech Solutions LLC, UEI 123456789, NAICS 541512, SAM activo, small business, mujer owned" />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setAiOpen(false)}>Cancelar</Button>
+            <Button variant="gold" onClick={aiCreate} disabled={busy || !aiPrompt.trim()}>{busy ? 'Creando…' : 'Crear con AI'}</Button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

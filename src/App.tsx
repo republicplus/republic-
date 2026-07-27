@@ -9,6 +9,7 @@ import { Contracts } from './pages/Contracts'
 import { ContractDetail } from './pages/ContractDetail'
 import { Wallet } from './pages/Wallet'
 import { Tools } from './pages/Tools'
+import { Documents } from './pages/Documents'
 import { Suppliers } from './pages/Suppliers'
 import { Capital } from './pages/Capital'
 import { Investors } from './pages/Investors'
@@ -19,7 +20,7 @@ import { AIAssistant } from './pages/AIAssistant'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted">Cargando…</div>
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-violet-300/70">Cargando…</div>
   if (!session) return <Navigate to="/auth" replace />
   return <>{children}</>
 }
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="contracts/:id" element={<ContractDetail />} />
         <Route path="wallet" element={<Wallet />} />
         <Route path="tools" element={<Tools />} />
+        <Route path="documents" element={<Documents />} />
         <Route path="suppliers" element={<Suppliers />} />
         <Route path="capital" element={<Capital />} />
         <Route path="investors" element={<Investors />} />

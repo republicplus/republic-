@@ -121,33 +121,33 @@ export function Dashboard() {
       <div className="col-span-12 xl:col-span-8 space-y-6">
         <Card className="overflow-hidden">
           <div className="navy-gradient p-8 flex flex-col items-center text-center relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-gold-400/10 blur-3xl" />
+            <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-fuchsia-500/20 blur-3xl" />
             <AIOrb size={120} active={thinking} />
-            <h2 className="font-display text-2xl font-bold text-white mt-6">Orbe de Inteligencia Artificial</h2>
-            <p className="text-navy-200 text-sm mt-1.5 max-w-md">
+            <h2 className="font-display text-2xl font-bold text-white mt-6 neon-text">Orbe de Inteligencia Artificial</h2>
+            <p className="text-violet-200 text-sm mt-1.5 max-w-md">
               Especializado en Government Contracting — FAR, SAM.gov, SBA, NAICS, propuestas, pricing, capital y más.
             </p>
           </div>
 
           <div className="flex h-[420px]">
             {/* chat list */}
-            <div className="w-56 border-r border-line flex flex-col">
-              <div className="p-3 border-b border-line">
+            <div className="w-56 border-r border-violet-400/15 flex flex-col">
+              <div className="p-3 border-b border-violet-400/15">
                 <Button variant="gold" size="sm" className="w-full" onClick={newChat}><Plus size={14} /> Nuevo Chat</Button>
               </div>
               <div className="px-3 py-2">
-                <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-navy-50 text-muted text-xs">
+                <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-violet-950/50 text-violet-300/70 text-xs border border-violet-400/20">
                   <Search size={13} />
                   <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar…" className="bg-transparent outline-none flex-1" />
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto no-scrollbar px-2 pb-2 space-y-0.5">
-                {filteredChats.length === 0 && <div className="text-xs text-muted text-center py-6">Sin conversaciones</div>}
+                {filteredChats.length === 0 && <div className="text-xs text-violet-300/70 text-center py-6">Sin conversaciones</div>}
                 {filteredChats.map((c) => (
-                  <div key={c.id} className={cn('group flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition', activeChat?.id === c.id ? 'bg-navy-900 text-white' : 'hover:bg-navy-50 text-navy-700')} onClick={() => setActiveChat(c)}>
-                    <MessageSquare size={14} className={activeChat?.id === c.id ? 'text-gold-400' : 'text-muted'} />
+                  <div key={c.id} className={cn('group flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition', activeChat?.id === c.id ? 'bg-fuchsia-500/15 text-fuchsia-200 border border-fuchsia-400/30' : 'hover:bg-violet-500/10 text-violet-300/80')} onClick={() => setActiveChat(c)}>
+                    <MessageSquare size={14} className={activeChat?.id === c.id ? 'text-fuchsia-400' : 'text-violet-400'} />
                     <span className="text-xs truncate flex-1">{c.title}</span>
-                    <button onClick={(e) => { e.stopPropagation(); deleteChat(c.id) }} className="opacity-0 group-hover:opacity-100 text-muted hover:text-error-600 transition"><Trash2 size={13} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); deleteChat(c.id) }} className="opacity-0 group-hover:opacity-100 text-violet-400 hover:text-rose-400 transition"><Trash2 size={13} /></button>
                   </div>
                 ))}
               </div>
@@ -158,33 +158,33 @@ export function Dashboard() {
               <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar p-5 space-y-4">
                 {messages.length === 0 && !thinking && (
                   <div className="h-full flex flex-col items-center justify-center text-center">
-                    <Sparkles size={28} className="text-gold-400 mb-3" />
-                    <p className="text-sm text-muted max-w-xs">Pregúntame sobre FAR, SAM.gov, NAICS, propuestas, pricing, capital o proveedores.</p>
+                    <Sparkles size={28} className="text-fuchsia-400 mb-3" />
+                    <p className="text-sm text-violet-300/70 max-w-xs">Pregúntame sobre FAR, SAM.gov, NAICS, propuestas, pricing, capital o proveedores.</p>
                     <div className="grid grid-cols-2 gap-2 mt-5 max-w-md">
                       {SUGGESTIONS.slice(0, 4).map((s) => (
-                        <button key={s} onClick={() => { setInput(s); }} className="text-left text-xs text-navy-700 px-3 py-2 rounded-xl border border-line hover:border-navy-200 hover:bg-navy-50 transition">{s}</button>
+                        <button key={s} onClick={() => { setInput(s); }} className="text-left text-xs text-violet-200 px-3 py-2 rounded-xl border border-violet-400/20 hover:border-fuchsia-400/40 hover:bg-violet-500/10 transition">{s}</button>
                       ))}
                     </div>
                   </div>
                 )}
                 {messages.map((m) => (
                   <div key={m.id} className={cn('flex gap-3 animate-fade-up', m.role === 'user' ? 'justify-end' : '')}>
-                    {m.role === 'assistant' && <div className="w-7 h-7 rounded-lg navy-gradient flex items-center justify-center shrink-0"><Sparkles size={13} className="text-gold-400" /></div>}
-                    <div className={cn('max-w-[75%] px-4 py-2.5 rounded-2xl text-sm', m.role === 'user' ? 'bg-navy-900 text-white' : 'bg-navy-50 text-navy-800')}>
+                    {m.role === 'assistant' && <div className="w-7 h-7 rounded-lg navy-gradient flex items-center justify-center shrink-0"><Sparkles size={13} className="text-fuchsia-400" /></div>}
+                    <div className={cn('max-w-[75%] px-4 py-2.5 rounded-2xl text-sm', m.role === 'user' ? 'bg-violet-900 text-white' : 'bg-violet-500/10 text-violet-100')}>
                       {m.content}
                     </div>
                   </div>
                 ))}
                 {thinking && (
                   <div className="flex gap-3 animate-fade-in">
-                    <div className="w-7 h-7 rounded-lg navy-gradient flex items-center justify-center shrink-0"><Sparkles size={13} className="text-gold-400" /></div>
-                    <div className="bg-navy-50 px-4 py-3 rounded-2xl flex gap-1">
-                      {[0,1,2].map((i) => <span key={i} className="w-1.5 h-1.5 rounded-full bg-navy-400 animate-pulse-soft" style={{ animationDelay: `${i*0.2}s` }} />)}
+                    <div className="w-7 h-7 rounded-lg navy-gradient flex items-center justify-center shrink-0"><Sparkles size={13} className="text-fuchsia-400" /></div>
+                    <div className="bg-violet-500/10 px-4 py-3 rounded-2xl flex gap-1">
+                      {[0,1,2].map((i) => <span key={i} className="w-1.5 h-1.5 rounded-full bg-fuchsia-400 animate-pulse-soft" style={{ animationDelay: `${i*0.2}s` }} />)}
                     </div>
                   </div>
                 )}
               </div>
-              <div className="p-3 border-t border-line flex gap-2">
+              <div className="p-3 border-t border-violet-400/15 flex gap-2">
                 <Input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="Escribe tu pregunta…" className="flex-1" />
                 <Button variant="primary" onClick={send}><Send size={15} /></Button>
               </div>
@@ -198,8 +198,8 @@ export function Dashboard() {
         <div className="grid grid-cols-2 gap-4">
           {kpis.map((k) => (
             <Card key={k.label} hover className="p-5">
-              <div className="text-xs text-muted">{k.label}</div>
-              <div className="font-display text-2xl font-bold text-navy-900 mt-1">{k.value}</div>
+              <div className="text-xs text-violet-300/70">{k.label}</div>
+              <div className="font-display text-2xl font-bold text-violet-100 mt-1">{k.value}</div>
               <div className="mt-2"><Badge tone={k.tone}>{k.sub}</Badge></div>
             </Card>
           ))}
@@ -207,15 +207,15 @@ export function Dashboard() {
 
         <Card className="p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-navy-900">Próximas Entregas</h3>
+            <h3 className="font-semibold text-violet-100">Próximas Entregas</h3>
             <Badge tone="info">{upcomingDeliveries.length}</Badge>
           </div>
           <div className="space-y-2.5">
-            {upcomingDeliveries.length === 0 && <p className="text-sm text-muted">Sin entregas próximas.</p>}
+            {upcomingDeliveries.length === 0 && <p className="text-sm text-violet-300/70">Sin entregas próximas.</p>}
             {upcomingDeliveries.map((c) => (
               <div key={c.id} className="flex items-center justify-between text-sm">
-                <span className="truncate text-navy-800">{c.title}</span>
-                <span className="text-xs text-muted shrink-0 ml-2">{formatDate(c.delivery_date)}</span>
+                <span className="truncate text-violet-200">{c.title}</span>
+                <span className="text-xs text-violet-300/70 shrink-0 ml-2">{formatDate(c.delivery_date)}</span>
               </div>
             ))}
           </div>
@@ -223,29 +223,29 @@ export function Dashboard() {
 
         <Card className="p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-navy-900">Próximos Pagos</h3>
+            <h3 className="font-semibold text-violet-100">Próximos Pagos</h3>
             <Badge tone="gold">{upcomingPayments.length}</Badge>
           </div>
           <div className="space-y-2.5">
-            {upcomingPayments.length === 0 && <p className="text-sm text-muted">Sin pagos próximos.</p>}
+            {upcomingPayments.length === 0 && <p className="text-sm text-violet-300/70">Sin pagos próximos.</p>}
             {upcomingPayments.map((c) => (
               <div key={c.id} className="flex items-center justify-between text-sm">
-                <span className="truncate text-navy-800">{c.title}</span>
-                <span className="text-xs text-muted shrink-0 ml-2">{formatCurrency(c.total_value)}</span>
+                <span className="truncate text-violet-200">{c.title}</span>
+                <span className="text-xs text-violet-300/70 shrink-0 ml-2">{formatCurrency(c.total_value)}</span>
               </div>
             ))}
           </div>
         </Card>
 
         <Card className="p-5">
-          <h3 className="font-semibold text-navy-900 mb-3">Actividad Reciente</h3>
+          <h3 className="font-semibold text-violet-100 mb-3">Actividad Reciente</h3>
           <div className="space-y-2.5">
-            {wallet.length === 0 && contracts.length === 0 && <p className="text-sm text-muted">Sin actividad aún.</p>}
+            {wallet.length === 0 && contracts.length === 0 && <p className="text-sm text-violet-300/70">Sin actividad aún.</p>}
             {contracts.slice(0, 4).map((c) => (
               <div key={c.id} className="flex items-center gap-2 text-sm">
-                <span className={cn('w-2 h-2 rounded-full', c.status === 'won' ? 'bg-success-500' : 'bg-warning-500')} />
-                <span className="truncate text-navy-800 flex-1">{c.title}</span>
-                <span className="text-xs text-muted capitalize">{c.status}</span>
+                <span className={cn('w-2 h-2 rounded-full', c.status === 'won' ? 'bg-teal-400' : 'bg-amber-400')} />
+                <span className="truncate text-violet-200 flex-1">{c.title}</span>
+                <span className="text-xs text-violet-300/70 capitalize">{c.status}</span>
               </div>
             ))}
           </div>

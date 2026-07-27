@@ -132,8 +132,8 @@ export function AIAssistant() {
         <div className="flex items-center gap-3">
           <AIOrb size={44} active={busy} />
           <div>
-            <h1 className="text-xl font-bold text-navy-900">Orbe AI</h1>
-            <p className="text-sm text-muted">Pregunta sobre tus contratos del gobierno</p>
+            <h1 className="text-xl font-bold text-violet-100">Orbe AI</h1>
+            <p className="text-sm text-violet-300/70">Pregunta sobre tus contratos del gobierno</p>
           </div>
         </div>
         <Button variant="gold" onClick={newChat}><Plus size={16} /> Nueva consulta</Button>
@@ -142,16 +142,16 @@ export function AIAssistant() {
       <div className="grid lg:grid-cols-[260px_1fr] gap-6">
         <Card className="p-3 h-fit max-h-[70vh] overflow-y-auto no-scrollbar">
           {chats.length === 0 ? (
-            <p className="text-sm text-muted text-center py-6">Sin consultas aún</p>
+            <p className="text-sm text-violet-300/70 text-center py-6">Sin consultas aún</p>
           ) : (
             <div className="space-y-1">
               {chats.map((c) => (
-                <div key={c.id} className={cn('group flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition', activeChat === c.id ? 'bg-navy-900 text-white' : 'hover:bg-navy-50 text-navy-700')}>
+                <div key={c.id} className={cn('group flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition', activeChat === c.id ? 'bg-fuchsia-500/15 text-fuchsia-200 border border-fuchsia-400/30' : 'hover:bg-violet-500/10 text-violet-300/80')}>
                   <button onClick={() => setActiveChat(c.id)} className="flex items-center gap-2 flex-1 min-w-0 text-left">
                     <MessageSquare size={14} className="shrink-0" />
                     <span className="text-sm truncate">{c.title}</span>
                   </button>
-                  <button onClick={() => deleteChat(c.id)} className={cn('opacity-0 group-hover:opacity-100 transition', activeChat === c.id ? 'text-white/60 hover:text-white' : 'text-muted hover:text-error-600')}>
+                  <button onClick={() => deleteChat(c.id)} className={cn('opacity-0 group-hover:opacity-100 transition', activeChat === c.id ? 'text-white/60 hover:text-white' : 'text-violet-400 hover:text-rose-400')}>
                     <Trash2 size={13} />
                   </button>
                 </div>
@@ -170,7 +170,7 @@ export function AIAssistant() {
               />
               <div className="flex flex-wrap gap-2 justify-center max-w-lg mt-2 px-6">
                 {SUGGESTIONS.map((s) => (
-                  <button key={s} onClick={() => ask(s)} className="text-xs px-3 py-1.5 rounded-full border border-line bg-white text-navy-700 hover:border-navy-200 hover:bg-navy-50 transition">
+                  <button key={s} onClick={() => ask(s)} className="text-xs px-3 py-1.5 rounded-full border border-violet-400/20 bg-violet-950/40 text-violet-200 hover:border-fuchsia-400/40 hover:bg-violet-500/10 transition">
                     {s}
                   </button>
                 ))}
@@ -181,7 +181,7 @@ export function AIAssistant() {
               {messages.map((m) => (
                 <div key={m.id} className={cn('flex gap-3', m.role === 'user' ? 'justify-end' : 'justify-start')}>
                   {m.role === 'assistant' && <div className="shrink-0 mt-1"><AIOrb size={28} /></div>}
-                  <div className={cn('max-w-[80%] px-4 py-3 rounded-2xl text-sm whitespace-pre-wrap leading-relaxed', m.role === 'user' ? 'bg-navy-900 text-white rounded-br-sm' : 'bg-navy-50 text-navy-800 rounded-bl-sm')}>
+                  <div className={cn('max-w-[80%] px-4 py-3 rounded-2xl text-sm whitespace-pre-wrap leading-relaxed', m.role === 'user' ? 'bg-violet-900 text-white rounded-br-sm' : 'bg-violet-500/10 text-violet-100 rounded-bl-sm')}>
                     {m.content}
                   </div>
                 </div>
@@ -189,11 +189,11 @@ export function AIAssistant() {
               {busy && (
                 <div className="flex gap-3">
                   <AIOrb size={28} active />
-                  <div className="bg-navy-50 px-4 py-3 rounded-2xl rounded-bl-sm">
+                  <div className="bg-violet-500/10 px-4 py-3 rounded-2xl rounded-bl-sm">
                     <div className="flex gap-1">
-                      <span className="w-2 h-2 rounded-full bg-navy-300 animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 rounded-full bg-navy-300 animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 rounded-full bg-navy-300 animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-fuchsia-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-fuchsia-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-fuchsia-400 animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                   </div>
                 </div>
@@ -203,7 +203,7 @@ export function AIAssistant() {
 
           {error && <div className="px-5 py-2 text-sm text-error-600 bg-red-50 border-t border-red-100">{error}</div>}
 
-          <div className="border-t border-line p-4">
+          <div className="border-t border-violet-400/15 p-4">
             <div className="flex gap-2">
               <input
                 value={input}
@@ -211,7 +211,7 @@ export function AIAssistant() {
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), ask(input))}
                 placeholder="Escribe tu pregunta sobre contratos…"
                 disabled={busy}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-line bg-white text-sm text-navy-900 placeholder:text-navy-300 focus:outline-none focus:ring-2 focus:ring-navy-300/40 focus:border-navy-300 transition disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-violet-400/20 bg-violet-950/40 text-sm text-violet-50 placeholder:text-violet-400/40 focus:outline-none focus:ring-2 focus:ring-fuchsia-400/40 focus:border-fuchsia-400/50 transition disabled:opacity-50"
               />
               <Button variant="gold" onClick={() => ask(input)} disabled={busy || !input.trim()}>
                 <Send size={16} />

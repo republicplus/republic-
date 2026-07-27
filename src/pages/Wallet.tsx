@@ -37,7 +37,7 @@ export function Wallet() {
     return acc
   }, {} as Record<string, number>)).map(([name, value]) => ({ name, value }))
 
-  const PIE_COLORS = ['#0b1f3a', '#2c4f7d', '#5d87b8', '#93b0d2', '#e8b84b', '#d39e2f']
+  const PIE_COLORS = ['#a855f7', '#d946ef', '#8b5cf6', '#c084fc', '#e879f9', '#f0abfc']
 
   function exportCsv() {
     const rows = [['Fecha','Tipo','Descripción','Monto','Estado'], ...tx.map((t) => [t.date, t.type, t.description, t.amount, t.status])]
@@ -67,10 +67,10 @@ export function Wallet() {
           return (
             <Card key={k.label} hover className="p-5">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted">{k.label}</span>
-                <Icon size={16} className="text-navy-400" />
+                <span className="text-xs text-violet-300/70">{k.label}</span>
+                <Icon size={16} className="text-fuchsia-400" />
               </div>
-              <div className="font-display text-2xl font-bold text-navy-900 mt-2">{k.value}</div>
+              <div className="font-display text-2xl font-bold text-violet-100 mt-2">{k.value}</div>
               <div className="mt-2"><Badge tone={k.tone as any}>{k.label.includes('ROI') ? 'Retorno' : 'Actual'}</Badge></div>
             </Card>
           )
@@ -82,10 +82,10 @@ export function Wallet() {
           <SectionTitle title="Ganancias por Contrato" />
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={byContract}>
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#5b6b82" />
-              <YAxis tick={{ fontSize: 11 }} stroke="#5b6b82" tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-              <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: 12, border: '1px solid #e6ebf2' }} />
-              <Bar dataKey="value" fill="#0b1f3a" radius={[6,6,0,0]} />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#a78bda" />
+              <YAxis tick={{ fontSize: 11 }} stroke="#a78bda" tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+              <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: 12, border: '1px solid rgba(168,85,247,0.3)', background: '#1a0b2e', color: '#f5f3ff' }} />
+              <Bar dataKey="value" fill="#a855f7" radius={[6,6,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -96,7 +96,7 @@ export function Wallet() {
               <Pie data={byClient} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50}>
                 {byClient.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
               </Pie>
-              <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: 12, border: '1px solid #e6ebf2' }} />
+              <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: 12, border: '1px solid rgba(168,85,247,0.3)', background: '#1a0b2e', color: '#f5f3ff' }} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
             </PieChart>
           </ResponsiveContainer>
@@ -106,19 +106,19 @@ export function Wallet() {
       <Card className="p-6">
         <SectionTitle title="Flujo de Efectivo" subtitle="Transacciones recientes" />
         <div className="space-y-2">
-          {tx.length === 0 && <p className="text-sm text-muted">Sin transacciones aún.</p>}
+          {tx.length === 0 && <p className="text-sm text-violet-300/70">Sin transacciones aún.</p>}
           {tx.map((t) => (
-            <div key={t.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-line hover:bg-navy-50/40 transition">
+            <div key={t.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-violet-400/15 hover:bg-violet-500/5 transition">
               <div className="flex items-center gap-3">
-                <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center', t.amount >= 0 ? 'bg-green-50 text-success-600' : 'bg-red-50 text-error-600')}>
+                <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center', t.amount >= 0 ? 'bg-teal-500/10 text-teal-300' : 'bg-rose-500/10 text-rose-300')}>
                   {t.amount >= 0 ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-navy-900">{t.description || t.type}</div>
-                  <div className="text-xs text-muted">{formatDate(t.date)} · {t.type}</div>
+                  <div className="text-sm font-medium text-violet-100">{t.description || t.type}</div>
+                  <div className="text-xs text-violet-300/70">{formatDate(t.date)} · {t.type}</div>
                 </div>
               </div>
-              <span className={cn('text-sm font-semibold', t.amount >= 0 ? 'text-success-600' : 'text-error-600')}>{formatCurrency(t.amount)}</span>
+              <span className={cn('text-sm font-semibold', t.amount >= 0 ? 'text-teal-300' : 'text-rose-300')}>{formatCurrency(t.amount)}</span>
             </div>
           ))}
         </div>

@@ -37,9 +37,9 @@ export function Capital() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-line text-sm text-muted">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-950/50 border border-violet-400/20 text-sm text-violet-300/70">
             <Search size={15} />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar…" className="bg-transparent outline-none w-44" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar…" className="bg-transparent outline-none w-44 placeholder:text-violet-400/40" />
           </div>
           <Select value={filter} onChange={(e) => setFilter(e.target.value)} className="w-auto">
             <option value="all">Todos</option>
@@ -58,21 +58,21 @@ export function Capital() {
             <Card key={p.id} hover className="p-5">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-navy-50 flex items-center justify-center text-navy-600"><Landmark size={18} /></div>
+                  <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center text-fuchsia-400 neon-border"><Landmark size={18} /></div>
                   <div>
-                    <h3 className="font-semibold text-navy-900">{p.name}</h3>
+                    <h3 className="font-semibold text-violet-100">{p.name}</h3>
                     <Badge tone="info">{p.type}</Badge>
                   </div>
                 </div>
-                <button onClick={() => toggleFav(p.id, p.favorite)} className={cn('transition', p.favorite ? 'text-gold-400' : 'text-navy-200 hover:text-gold-400')}><Star size={16} fill={p.favorite ? 'currentColor' : 'none'} /></button>
+                <button onClick={() => toggleFav(p.id, p.favorite)} className={cn('transition', p.favorite ? 'text-fuchsia-400' : 'text-violet-400 hover:text-fuchsia-400')}><Star size={16} fill={p.favorite ? 'currentColor' : 'none'} /></button>
               </div>
               <div className="grid grid-cols-2 gap-1.5 mt-4 text-xs">
-                <div><span className="text-muted">Monto min:</span> <span className="text-navy-800">{formatCurrency(p.amount_min)}</span></div>
-                <div><span className="text-muted">Monto max:</span> <span className="text-navy-800">{formatCurrency(p.amount_max)}</span></div>
-                <div><span className="text-muted">Interés:</span> <span className="text-navy-800">{p.interest_rate || '—'}</span></div>
-                <div><span className="text-muted">Plazo:</span> <span className="text-navy-800">{p.term || '—'}</span></div>
+                <div><span className="text-violet-300/70">Monto min:</span> <span className="text-violet-200">{formatCurrency(p.amount_min)}</span></div>
+                <div><span className="text-violet-300/70">Monto max:</span> <span className="text-violet-200">{formatCurrency(p.amount_max)}</span></div>
+                <div><span className="text-violet-300/70">Interés:</span> <span className="text-violet-200">{p.interest_rate || '—'}</span></div>
+                <div><span className="text-violet-300/70">Plazo:</span> <span className="text-violet-200">{p.term || '—'}</span></div>
               </div>
-              {p.requirements && <p className="text-xs text-muted mt-3 line-clamp-2">{p.requirements}</p>}
+              {p.requirements && <p className="text-xs text-violet-300/70 mt-3 line-clamp-2">{p.requirements}</p>}
               <div className="flex gap-2 mt-4">
                 <Button variant="secondary" size="sm" onClick={() => { setDraft(p); setOpen(true) }}><Pencil size={13} /> Editar</Button>
                 <Button variant="danger" size="sm" onClick={() => remove(p.id)}><Trash2 size={13} /></Button>

@@ -43,9 +43,9 @@ export function Contracts() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-line text-sm text-muted">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-950/50 border border-violet-400/20 text-sm text-violet-300/70">
             <Search size={15} />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar contrato…" className="bg-transparent outline-none w-48" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar contrato…" className="bg-transparent outline-none w-48 placeholder:text-violet-400/40" />
           </div>
           <Select value={filter} onChange={(e) => setFilter(e.target.value)} className="w-auto">
             <option value="all">Todos</option>
@@ -63,15 +63,15 @@ export function Contracts() {
             <Card key={c.id} hover className="p-5 cursor-pointer" >
               <div onClick={() => nav(`/app/contracts/${c.id}`)}>
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-navy-900 leading-snug">{c.title}</h3>
+                  <h3 className="font-semibold text-violet-100 leading-snug">{c.title}</h3>
                   <Badge tone={STATUS_TONE[c.status]}>{STATUS_LABEL[c.status]}</Badge>
                 </div>
-                <p className="text-xs text-muted mt-1">{c.agency || 'Sin agencia'} {c.solicitation_number && `· ${c.solicitation_number}`}</p>
+                <p className="text-xs text-violet-300/70 mt-1">{c.agency || 'Sin agencia'} {c.solicitation_number && `· ${c.solicitation_number}`}</p>
                 <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
-                  <div><span className="text-muted">Valor:</span> <span className="font-semibold text-navy-900">{formatCurrency(c.total_value)}</span></div>
-                  <div><span className="text-muted">Cierre:</span> <span className="text-navy-800">{formatDate(c.due_date)}</span></div>
-                  <div><span className="text-muted">NAICS:</span> <span className="text-navy-800">{c.naics || '—'}</span></div>
-                  <div><span className="text-muted">Entrega:</span> <span className="text-navy-800">{formatDate(c.delivery_date)}</span></div>
+                  <div><span className="text-violet-300/70">Valor:</span> <span className="font-semibold text-violet-100">{formatCurrency(c.total_value)}</span></div>
+                  <div><span className="text-violet-300/70">Cierre:</span> <span className="text-violet-200">{formatDate(c.due_date)}</span></div>
+                  <div><span className="text-violet-300/70">NAICS:</span> <span className="text-violet-200">{c.naics || '—'}</span></div>
+                  <div><span className="text-violet-300/70">Entrega:</span> <span className="text-violet-200">{formatDate(c.delivery_date)}</span></div>
                 </div>
               </div>
             </Card>

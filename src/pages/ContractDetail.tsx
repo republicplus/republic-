@@ -77,7 +77,7 @@ export function ContractDetail() {
     setInvoices((i) => i.filter((x) => x.id !== iid))
   }
 
-  if (!c) return <div className="text-muted">Cargando…</div>
+  if (!c) return <div className="text-violet-300/70">Cargando…</div>
 
   const tabs = [
     { id: 'overview', label: 'Resumen', icon: FileText },
@@ -89,7 +89,7 @@ export function ContractDetail() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <button onClick={() => nav('/app/contracts')} className="flex items-center gap-2 text-sm text-muted hover:text-navy-900 transition"><ArrowLeft size={16} /> Volver</button>
+        <button onClick={() => nav('/app/contracts')} className="flex items-center gap-2 text-sm text-violet-300/70 hover:text-fuchsia-400 transition"><ArrowLeft size={16} /> Volver</button>
         <Button variant="gold" onClick={saveContract}>{saved ? <><Check size={16} /> Guardado</> : <><Save size={16} /> Guardar</>}</Button>
       </div>
 
@@ -107,11 +107,11 @@ export function ContractDetail() {
         </div>
       </Card>
 
-      <div className="flex gap-1 border-b border-line">
+      <div className="flex gap-1 border-b border-violet-400/15">
         {tabs.map((t) => {
           const Icon = t.icon
           return (
-            <button key={t.id} onClick={() => setTab(t.id)} className={cn('flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition', tab === t.id ? 'border-navy-900 text-navy-900' : 'border-transparent text-muted hover:text-navy-700')}>
+            <button key={t.id} onClick={() => setTab(t.id)} className={cn('flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition', tab === t.id ? 'border-fuchsia-400 text-fuchsia-200' : 'border-transparent text-violet-300/70 hover:text-violet-100')}>
               <Icon size={15} /> {t.label}
             </button>
           )
@@ -187,14 +187,14 @@ export function ContractDetail() {
             <Button variant="primary" onClick={addChecklist}><Plus size={16} /></Button>
           </div>
           <div className="space-y-2">
-            {checklist.length === 0 && <p className="text-sm text-muted">Sin items.</p>}
+            {checklist.length === 0 && <p className="text-sm text-violet-300/70">Sin items.</p>}
             {checklist.map((item) => (
-              <div key={item.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-line hover:bg-navy-50/50 transition">
-                <button onClick={() => toggleCheck(item.id, item.done)} className={cn('w-5 h-5 rounded-md border-2 flex items-center justify-center transition', item.done ? 'bg-success-500 border-success-500' : 'border-navy-200')}>
+              <div key={item.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-violet-400/15 hover:bg-violet-500/5 transition">
+                <button onClick={() => toggleCheck(item.id, item.done)} className={cn('w-5 h-5 rounded-md border-2 flex items-center justify-center transition', item.done ? 'bg-teal-400 border-teal-400' : 'border-violet-400/40')}>
                   {item.done && <Check size={12} className="text-white" />}
                 </button>
-                <span className={cn('text-sm flex-1', item.done ? 'line-through text-muted' : 'text-navy-800')}>{item.label}</span>
-                <button onClick={() => delCheck(item.id)} className="text-muted hover:text-error-600 transition"><Trash2 size={14} /></button>
+                <span className={cn('text-sm flex-1', item.done ? 'line-through text-violet-300/70' : 'text-violet-100')}>{item.label}</span>
+                <button onClick={() => delCheck(item.id)} className="text-violet-300/70 hover:text-rose-400 transition"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
@@ -210,15 +210,15 @@ export function ContractDetail() {
             <Button variant="primary" onClick={addTimeline}><Plus size={16} /> Agregar</Button>
           </div>
           <div className="space-y-3">
-            {timeline.length === 0 && <p className="text-sm text-muted">Sin eventos.</p>}
+            {timeline.length === 0 && <p className="text-sm text-violet-300/70">Sin eventos.</p>}
             {timeline.map((t) => (
               <div key={t.id} className="flex items-center gap-3 group">
-                <div className="w-2 h-2 rounded-full bg-gold-400" />
-                <div className="flex-1 flex items-center justify-between px-3 py-2 rounded-xl border border-line">
-                  <span className="text-sm text-navy-800">{t.event}</span>
-                  <span className="text-xs text-muted">{formatDate(t.event_date)}</span>
+                <div className="w-2 h-2 rounded-full bg-fuchsia-400" />
+                <div className="flex-1 flex items-center justify-between px-3 py-2 rounded-xl border border-violet-400/15">
+                  <span className="text-sm text-violet-100">{t.event}</span>
+                  <span className="text-xs text-violet-300/70">{formatDate(t.event_date)}</span>
                 </div>
-                <button onClick={() => delTimeline(t.id)} className="text-muted hover:text-error-600 transition opacity-0 group-hover:opacity-100"><Trash2 size={14} /></button>
+                <button onClick={() => delTimeline(t.id)} className="text-violet-300/70 hover:text-rose-400 transition opacity-0 group-hover:opacity-100"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
@@ -235,17 +235,17 @@ export function ContractDetail() {
             <Button variant="primary" onClick={addInvoice}><Plus size={16} /> Agregar</Button>
           </div>
           <div className="space-y-2">
-            {invoices.length === 0 && <p className="text-sm text-muted">Sin facturas.</p>}
+            {invoices.length === 0 && <p className="text-sm text-violet-300/70">Sin facturas.</p>}
             {invoices.map((inv) => (
-              <div key={inv.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-line">
+              <div key={inv.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-violet-400/15">
                 <div className="flex items-center gap-4">
-                  <span className="font-medium text-navy-900">{inv.invoice_number}</span>
+                  <span className="font-medium text-violet-100">{inv.invoice_number}</span>
                   <Badge tone={inv.status === 'paid' ? 'success' : 'warning'}>{inv.status}</Badge>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="text-sm font-semibold text-navy-900">{formatCurrency(inv.amount)}</span>
-                  <span className="text-xs text-muted">{formatDate(inv.due_date)}</span>
-                  <button onClick={() => delInvoice(inv.id)} className="text-muted hover:text-error-600 transition"><Trash2 size={14} /></button>
+                  <span className="text-sm font-semibold text-violet-100">{formatCurrency(inv.amount)}</span>
+                  <span className="text-xs text-violet-300/70">{formatDate(inv.due_date)}</span>
+                  <button onClick={() => delInvoice(inv.id)} className="text-violet-300/70 hover:text-rose-400 transition"><Trash2 size={14} /></button>
                 </div>
               </div>
             ))}

@@ -43,10 +43,10 @@ export function Pools() {
     <div className="space-y-6">
       <Card className="p-5 navy-gradient">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><Layers size={20} className="text-gold-400" /></div>
+          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><Layers size={20} className="text-fuchsia-400" /></div>
           <div>
             <h3 className="font-semibold text-white">Pools de Inversión</h3>
-            <p className="text-sm text-navy-200">Fondos colectivos donde inversionistas pueden participar. Términos sujetos a contrato.</p>
+            <p className="text-sm text-violet-200">Fondos colectivos donde inversionistas pueden participar. Términos sujetos a contrato.</p>
           </div>
         </div>
       </Card>
@@ -66,37 +66,37 @@ export function Pools() {
               <Card key={p.id} hover className="p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="font-semibold text-navy-900 text-lg">{p.name}</h3>
-                    {p.target && <p className="text-xs text-muted">Objetivo: {formatCurrency(p.target)}</p>}
+                    <h3 className="font-semibold text-violet-100 text-lg">{p.name}</h3>
+                    {p.target && <p className="text-xs text-violet-300/70">Objetivo: {formatCurrency(p.target)}</p>}
                   </div>
                   <Badge tone={p.status === 'open' ? 'success' : 'neutral'}>{p.status}</Badge>
                 </div>
                 <div className="mt-4">
-                  <div className="flex justify-between text-xs text-muted mb-1.5">
+                  <div className="flex justify-between text-xs text-violet-300/70 mb-1.5">
                     <span>{formatCurrency(p.capital_raised)} recaudado</span>
                     <span>{formatCurrency(p.capital_required)} meta</span>
                   </div>
                   <Progress value={pct} />
                 </div>
                 <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
-                  <div><span className="text-muted">Participantes:</span> <span className="text-navy-800">{p.participants || parts.length}</span></div>
-                  <div><span className="text-muted">Cierre:</span> <span className="text-navy-800">{formatDate(p.close_date)}</span></div>
-                  <div><span className="text-muted">Retorno est.:</span> <span className="text-navy-800">{p.estimated_return || 'Si aplica'}</span></div>
-                  <div><span className="text-muted">Estructura:</span> <span className="text-navy-800">{p.participation_structure || 'Sujeto a contrato'}</span></div>
+                  <div><span className="text-violet-300/70">Participantes:</span> <span className="text-violet-200">{p.participants || parts.length}</span></div>
+                  <div><span className="text-violet-300/70">Cierre:</span> <span className="text-violet-200">{formatDate(p.close_date)}</span></div>
+                  <div><span className="text-violet-300/70">Retorno est.:</span> <span className="text-violet-200">{p.estimated_return || 'Si aplica'}</span></div>
+                  <div><span className="text-violet-300/70">Estructura:</span> <span className="text-violet-200">{p.participation_structure || 'Sujeto a contrato'}</span></div>
                 </div>
-                {p.terms && <p className="text-xs text-muted mt-3 line-clamp-2">{p.terms}</p>}
+                {p.terms && <p className="text-xs text-violet-300/70 mt-3 line-clamp-2">{p.terms}</p>}
                 <div className="flex gap-2 mt-4">
                   <Button variant="gold" size="sm" onClick={() => join(p.id)}><Users size={13} /> Solicitar ingreso</Button>
                   <Button variant="secondary" size="sm" onClick={() => { setDraft(p); setOpen(true) }}><Pencil size={13} /> Editar</Button>
                   <Button variant="danger" size="sm" onClick={() => remove(p.id)}><Trash2 size={13} /></Button>
                 </div>
                 {parts.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-line">
-                    <div className="text-xs font-medium text-muted mb-2">Participaciones ({parts.length})</div>
+                  <div className="mt-4 pt-4 border-t border-violet-400/15">
+                    <div className="text-xs font-medium text-violet-300/70 mb-2">Participaciones ({parts.length})</div>
                     <div className="space-y-1">
                       {parts.map((part) => (
                         <div key={part.id} className="flex justify-between text-xs">
-                          <span className="text-navy-800">{formatCurrency(part.amount)}</span>
+                          <span className="text-violet-200">{formatCurrency(part.amount)}</span>
                           <Badge tone={part.status === 'approved' ? 'success' : 'warning'}>{part.status}</Badge>
                         </div>
                       ))}
@@ -114,11 +114,11 @@ export function Pools() {
           <SectionTitle title="Configuración del pool" />
           <Input label="Nombre" value={draft.name || ''} onChange={(e) => setDraft((d:any) => ({ ...d, name: e.target.value }))} />
           <div>
-            <span className="block text-xs font-medium text-muted mb-1.5">Presets de capital</span>
+            <span className="block text-xs font-medium text-violet-300/70 mb-1.5">Presets de capital</span>
             <div className="flex flex-wrap gap-2">
               {POOL_PRESETS.map((v) => (
                 <button key={v} type="button" onClick={() => setDraft((d:any) => ({ ...d, capital_required: v, target: v }))}
-                  className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition', draft.capital_required === v ? 'bg-navy-900 text-white border-navy-900' : 'bg-white text-navy-700 border-line hover:border-navy-200')}>
+                  className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition', draft.capital_required === v ? 'bg-violet-900 text-white border-violet-500' : 'bg-violet-950/40 text-violet-200 border-violet-400/20 hover:border-fuchsia-400/40')}>
                   {formatCurrency(v)}
                 </button>
               ))}

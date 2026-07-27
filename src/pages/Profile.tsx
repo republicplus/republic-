@@ -28,18 +28,18 @@ export function Profile() {
 
   function set(k: string, v: any) { setProfile((p: any) => ({ ...p, [k]: v })) }
 
-  if (!profile) return <div className="text-muted">Cargando…</div>
+  if (!profile) return <div className="text-violet-300/70">Cargando…</div>
 
   return (
     <div className="max-w-3xl space-y-6">
       <Card className="p-6">
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-16 h-16 rounded-2xl navy-gradient flex items-center justify-center text-white text-xl font-bold">
+          <div className="w-16 h-16 rounded-2xl navy-gradient flex items-center justify-center text-white text-xl font-bold neon-border">
             {(profile.first_name?.[0] || 'U')}{(profile.last_name?.[0] || '')}
           </div>
           <div>
-            <h2 className="font-display text-xl font-bold text-navy-900">{profile.first_name} {profile.last_name}</h2>
-            <p className="text-sm text-muted">{profile.email}</p>
+            <h2 className="font-display text-xl font-bold text-violet-100">{profile.first_name} {profile.last_name}</h2>
+            <p className="text-sm text-violet-300/70">{profile.email}</p>
             <div className="mt-1.5"><Badge tone="gold" >{profile.role || 'contractor'}</Badge></div>
           </div>
         </div>

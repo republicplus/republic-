@@ -86,9 +86,9 @@ export function Risk() {
                 </RadialBarChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <div className={cn('w-4 h-4 rounded-full mb-1', riskLevel === 'Bajo' ? 'bg-success-500' : riskLevel === 'Medio' ? 'bg-warning-500' : 'bg-error-500')} />
-                <div className="font-display text-2xl font-bold text-navy-900">{riskLevel}</div>
-                <div className="text-xs text-muted">{utilization}% usado</div>
+                <div className={cn('w-4 h-4 rounded-full mb-1', riskLevel === 'Bajo' ? 'bg-teal-400' : riskLevel === 'Medio' ? 'bg-amber-400' : 'bg-rose-400')} />
+                <div className="font-display text-2xl font-bold text-violet-100">{riskLevel}</div>
+                <div className="text-xs text-violet-300/70">{utilization}% usado</div>
               </div>
             </div>
             <Badge tone={riskTone as any}>{riskLevel === 'Bajo' ? '🟢 Bajo' : riskLevel === 'Medio' ? '🟡 Medio' : '🔴 Alto'}</Badge>
@@ -98,21 +98,21 @@ export function Risk() {
         <Card className="p-6 lg:col-span-2">
           <SectionTitle title="Capacidad de Licitación" subtitle="Calculada por el motor de riesgo" />
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl bg-navy-50">
-              <div className="text-xs text-muted">Capacidad máxima</div>
-              <div className="font-display text-2xl font-bold text-navy-900">{formatCurrency(maxBid)}</div>
+            <div className="p-4 rounded-xl bg-violet-500/10">
+              <div className="text-xs text-violet-300/70">Capacidad máxima</div>
+              <div className="font-display text-2xl font-bold text-violet-100">{formatCurrency(maxBid)}</div>
             </div>
-            <div className="p-4 rounded-xl bg-gold-50">
-              <div className="text-xs text-muted">Recomendada</div>
-              <div className="font-display text-2xl font-bold text-navy-900">{formatCurrency(recommended)}</div>
+            <div className="p-4 rounded-xl bg-fuchsia-500/10">
+              <div className="text-xs text-violet-300/70">Recomendada</div>
+              <div className="font-display text-2xl font-bold text-violet-100">{formatCurrency(recommended)}</div>
             </div>
-            <div className="p-4 rounded-xl border border-line">
-              <div className="text-xs text-muted">Capital disponible</div>
-              <div className="font-display text-xl font-bold text-navy-900">{formatCurrency(available)}</div>
+            <div className="p-4 rounded-xl border border-violet-400/15">
+              <div className="text-xs text-violet-300/70">Capital disponible</div>
+              <div className="font-display text-xl font-bold text-violet-100">{formatCurrency(available)}</div>
             </div>
-            <div className="p-4 rounded-xl border border-line">
-              <div className="text-xs text-muted">Capital comprometido</div>
-              <div className="font-display text-xl font-bold text-navy-900">{formatCurrency(committed)}</div>
+            <div className="p-4 rounded-xl border border-violet-400/15">
+              <div className="text-xs text-violet-300/70">Capital comprometido</div>
+              <div className="font-display text-xl font-bold text-violet-100">{formatCurrency(committed)}</div>
             </div>
           </div>
         </Card>
@@ -123,23 +123,23 @@ export function Risk() {
           <SectionTitle title="Fuentes de Capital" />
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={sources} layout="vertical">
-              <XAxis type="number" tick={{ fontSize: 11 }} stroke="#5b6b82" tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} stroke="#5b6b82" width={90} />
-              <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: 12, border: '1px solid #e6ebf2' }} />
-              <Bar dataKey="value" fill="#0b1f3a" radius={[0,6,6,0]} />
+              <XAxis type="number" tick={{ fontSize: 11 }} stroke="#a78bda" tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} stroke="#a78bda" width={90} />
+              <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: 12, border: '1px solid rgba(168,85,247,0.3)', background: '#1a0b2e', color: '#f5f3ff' }} />
+              <Bar dataKey="value" fill="#a855f7" radius={[0,6,6,0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
 
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
-            <Sparkles size={18} className="text-gold-400" />
-            <h3 className="font-semibold text-navy-900">Recomendaciones de IA</h3>
+            <Sparkles size={18} className="text-fuchsia-400" />
+            <h3 className="font-semibold text-violet-100">Recomendaciones de IA</h3>
           </div>
           <div className="space-y-3">
             {recommendations.map((r, i) => (
-              <div key={i} className="flex gap-3 text-sm text-navy-700">
-                <span className="w-6 h-6 rounded-lg bg-navy-50 flex items-center justify-center text-xs font-semibold text-navy-600 shrink-0">{i+1}</span>
+              <div key={i} className="flex gap-3 text-sm text-violet-200">
+                <span className="w-6 h-6 rounded-lg bg-violet-500/10 flex items-center justify-center text-xs font-semibold text-fuchsia-400 shrink-0 neon-border">{i+1}</span>
                 <span>{r}</span>
               </div>
             ))}
@@ -152,10 +152,10 @@ export function Risk() {
           <SectionTitle title="Historial de Evaluaciones" />
           <div className="space-y-2">
             {assessments.map((a) => (
-              <div key={a.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-line text-sm">
-                <span className="text-navy-800">{formatCurrency(a.recommended_capacity)} recomendado</span>
+              <div key={a.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-violet-400/15 text-sm">
+                <span className="text-violet-200">{formatCurrency(a.recommended_capacity)} recomendado</span>
                 <Badge tone={a.risk_level === 'Bajo' ? 'success' : a.risk_level === 'Medio' ? 'warning' : 'error'}>{a.risk_level}</Badge>
-                <span className="text-muted">{new Date(a.created_at).toLocaleDateString()}</span>
+                <span className="text-violet-300/70">{new Date(a.created_at).toLocaleDateString()}</span>
               </div>
             ))}
           </div>
