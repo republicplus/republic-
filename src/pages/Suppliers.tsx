@@ -188,7 +188,7 @@ export function Suppliers() {
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex items-center gap-1.5 text-xs text-violet-300/60 mr-1"><Filter size={13} /> <span className="font-medium">Categorías:</span></div>
         <button onClick={() => setTypeFilter('all')} className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition', typeFilter === 'all' ? 'bg-fuchsia-500/15 text-fuchsia-200 border-fuchsia-400/30' : 'bg-violet-950/40 text-violet-300/70 border-violet-400/15 hover:border-fuchsia-400/30')}>Todos ({suppliers.length})</button>
-        {typeCounts.filter((t) => t.count > 0).map((t) => (
+        {typeCounts.map((t) => (
           <button key={t.type} onClick={() => setTypeFilter(t.type)} className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition', typeFilter === t.type ? 'bg-fuchsia-500/15 text-fuchsia-200 border-fuchsia-400/30' : 'bg-violet-950/40 text-violet-300/70 border-violet-400/15 hover:border-fuchsia-400/30')}>{t.type} ({t.count})</button>
         ))}
         <button onClick={() => setFavOnly(!favOnly)} className={cn('ml-auto px-3 py-1.5 rounded-lg text-xs font-medium border transition flex items-center gap-1.5', favOnly ? 'bg-amber-500/15 text-amber-200 border-amber-400/30' : 'bg-violet-950/40 text-violet-300/70 border-violet-400/15 hover:border-amber-400/30')}>
