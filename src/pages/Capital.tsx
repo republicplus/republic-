@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState } from '../components/ui'
+import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, InfoNote } from '../components/ui'
 import { Plus, Landmark, Star, Search, Trash2, Pencil, Sparkles, Loader as Loader2, Link2 } from 'lucide-react'
 import { cn, formatCurrency } from '../lib/utils'
 import { useAuth } from '../lib/auth'
@@ -78,6 +78,11 @@ export function Capital() {
           <Button variant="gold" onClick={() => { setDraft({ name: '', type: 'Banco', favorite: false }); setOpen(true) }}><Plus size={16} /> Nuevo</Button>
         </div>
       </div>
+
+      <InfoNote title="¿Qué es Capital?">
+        <p>Administra tus fuentes de capital: líneas de crédito, préstamos, inversionistas privados y fondos propios. Registra el monto disponible, tasa, plazo y estado de cada fuente.</p>
+        <p>Usa esta sección para saber cuánto capital tienes disponible antes de comprometerte en un contrato o pool de inversión.</p>
+      </InfoNote>
 
       {filtered.length === 0 ? (
         <Card><EmptyState icon={<Landmark size={22} />} title="Sin fuentes de capital" subtitle="Agrega bancos, lenders, factoring y más." action={<Button variant="gold" onClick={() => setOpen(true)}><Plus size={16} /> Agregar</Button>} /></Card>

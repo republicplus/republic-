@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle } from '../components/ui'
+import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle, InfoNote } from '../components/ui'
 import { Plus, Users, Trash2, Pencil, Search, ArrowRight, Sparkles } from 'lucide-react'
 import { cn, formatCurrency, formatDate, initials } from '../lib/utils'
 import { useAICreate } from '../lib/useAICreate'
@@ -53,6 +53,10 @@ export function Investors() {
 
   return (
     <div className="space-y-6">
+      <InfoNote title="¿Qué es Inversionistas?">
+        <p>Gestiona tu red de inversionistas y las oportunidades de inversión que les ofreces. En CRM registras cada inversionista con su capital disponible e intereses.</p>
+        <p>En Oportunidades publicas licitaciones pendientes de adjudicación para que los inversionistas apliquen con un modelo de reparto definido.</p>
+      </InfoNote>
       <div className="flex items-center gap-1 border-b border-violet-400/15">
         {(['crm','opportunities'] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={cn('px-4 py-2.5 text-sm font-medium border-b-2 transition', tab === t ? 'border-fuchsia-400 text-fuchsia-200' : 'border-transparent text-violet-300/70 hover:text-violet-100')}>

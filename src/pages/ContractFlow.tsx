@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle } from '../components/ui'
+import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle, InfoNote } from '../components/ui'
 import { Sparkles, Loader as Loader2, Upload, FileText, Search, Filter, Eye, Download, Save, Send, Plus, Trash2, CircleCheck as CheckCircle2, TriangleAlert as AlertTriangle, Circle as XCircle, CircleHelp as HelpCircle } from 'lucide-react'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
 
@@ -154,6 +154,11 @@ export function ContractFlow() {
         <h1 className="font-display text-2xl font-bold text-violet-100">Automatic Contract Flow</h1>
         <p className="text-sm text-violet-300/70 mt-1">Sube un contrato, texto o screenshot y la IA analiza producto, proveedores, costos, cumplimiento y genera una cotización</p>
       </div>
+
+      <InfoNote title="¿Qué es Automatic Contract Flow?">
+        <p>Sube un contrato (PDF, imagen o texto) y la IA analiza automáticamente: extrae el producto o servicio, busca proveedores, calcula costos, valida el cumplimiento y genera una cotización lista para presentar.</p>
+        <p>Usa esta sección para acelerar tu proceso de licitación: de un documento crudo a una propuesta completa en minutos.</p>
+      </InfoNote>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">

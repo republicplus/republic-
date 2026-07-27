@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle } from '../components/ui'
+import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle, InfoNote } from '../components/ui'
 import { Plus, Search, Trash2, Pencil, Star, Store, Sparkles, Loader as Loader2, Link2, ExternalLink, Filter, CircleCheck as CheckCircle2 } from 'lucide-react'
 import { cn, formatDate } from '../lib/utils'
 
@@ -166,6 +166,11 @@ export function Suppliers() {
         <h1 className="font-display text-2xl font-bold text-violet-100">Proveedores</h1>
         <p className="text-sm text-violet-300/70 mt-1">Base de datos de proveedores mayoristas para cumplir contratos gubernamentales</p>
       </div>
+
+      <InfoNote title="¿Qué es Proveedores?">
+        <p>Administra tu directorio de proveedores mayoristas para cumplir contratos gubernamentales. Cada proveedor tiene su categoría, contacto, sitio web, productos y estado.</p>
+        <p>Filtra por categoría para encontrar rápidamente el proveedor que necesitas, marca favoritos, o sube una lista completa con IA.</p>
+      </InfoNote>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { Card, Button, Input, Textarea, Select, Badge, SectionTitle, Toggle } from '../components/ui'
+import { Card, Button, Input, Textarea, Select, Badge, SectionTitle, Toggle, InfoNote } from '../components/ui'
 import { ArrowLeft, Plus, Trash2, Check, Save, Calendar, FileText, Receipt, ListChecks } from 'lucide-react'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
 
@@ -92,6 +92,11 @@ export function ContractDetail() {
         <button onClick={() => nav('/app/contracts')} className="flex items-center gap-2 text-sm text-violet-300/70 hover:text-fuchsia-400 transition"><ArrowLeft size={16} /> Volver</button>
         <Button variant="gold" onClick={saveContract}>{saved ? <><Check size={16} /> Guardado</> : <><Save size={16} /> Guardar</>}</Button>
       </div>
+
+      <InfoNote title="¿Qué es Contract Detail?">
+        <p>Esta es la ficha completa de un contrato. Aquí ves y editas el resumen, información de la agencia, fechas clave, datos financieros, entrega y contactos.</p>
+        <p>Usa las pestañas para gestionar el checklist de cumplimiento, la línea de tiempo de hitos y las facturas asociadas al contrato.</p>
+      </InfoNote>
 
       <Card className="p-6">
         <div className="flex items-start justify-between gap-4">

@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle } from '../components/ui'
+import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle, InfoNote } from '../components/ui'
 import { FileText, Plus, Search, Sparkles, Upload, Loader as Loader2, Heart } from 'lucide-react'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
 
@@ -123,6 +123,11 @@ export function Contracts() {
         <h1 className="font-display text-2xl font-bold text-violet-100">Contratos</h1>
         <p className="text-sm text-violet-300/70 mt-1">Gestiona tus oportunidades y contratos gubernamentales</p>
       </div>
+
+      <InfoNote title="¿Qué es Contratos?">
+        <p>Este es el centro de control de tus contratos gubernamentales. Crea contratos manualmente o sube un documento y la IA lo creará automáticamente.</p>
+        <p>Filtra por estado, busca por título o agencia, y abre la ficha de cada contrato para gestionar su cumplimiento, hitos y facturas.</p>
+      </InfoNote>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">

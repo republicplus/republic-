@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState } from '../components/ui'
+import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, InfoNote } from '../components/ui'
 import { Plus, ShieldCheck, Trash2, Pencil, Sparkles } from 'lucide-react'
 import { formatCurrency } from '../lib/utils'
 import { useAICreate } from '../lib/useAICreate'
@@ -47,6 +47,11 @@ export function Insurers() {
           <Badge tone="gold">{formatCurrency(totalCapacity)}</Badge>
         </div>
       </Card>
+
+      <InfoNote title="¿Qué es Aseguradoras?">
+        <p>Administra las aseguradoras y pólizas asociadas a tus contratos: bonds, seguros de responsabilidad, fiadoras y coberturas.</p>
+        <p>Registra el tipo de póliza, monto cubierto, vigencia y estado para saber qué coberturas tienes activas en cada momento.</p>
+      </InfoNote>
 
       <div className="flex justify-end gap-2">
         <Button variant="primary" onClick={() => setAiOpen(true)}><Sparkles size={16} /> Crear con AI</Button>

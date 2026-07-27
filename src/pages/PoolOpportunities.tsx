@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle } from '../components/ui'
+import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle, InfoNote } from '../components/ui'
 import { Plus, Search, Pencil, Trash2, Target, Sparkles, Loader as Loader2, Link2, Layers, Users, Landmark } from 'lucide-react'
 import { cn, formatCurrency, formatDate } from '../lib/utils'
 import { Progress } from '../components/Progress'
@@ -129,6 +129,11 @@ export function PoolOpportunities() {
           </button>
         </div>
       </div>
+
+      <InfoNote title="¿Qué es Pool Opportunities?">
+        <p>Combina dos herramientas: las Oportunidades (contratos potenciales con su valor, capital requerido y ganancia estimada) y los Pools (fondos colectivos donde varios inversionistas participan).</p>
+        <p>Usa las Oportunidades para evaluar contratos antes de presentar propuesta, y los Pools para reunir capital de varios inversionistas en un solo fondo.</p>
+      </InfoNote>
 
       {tab === 'opportunities' && (
         <>

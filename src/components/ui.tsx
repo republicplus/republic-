@@ -1,6 +1,6 @@
-import { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes } from 'react'
+import { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes, useState } from 'react'
 import { cn } from '../lib/utils'
-import { X } from 'lucide-react'
+import { X, Info } from 'lucide-react'
 
 export function Card({ children, className, hover }: { children: ReactNode; className?: string; hover?: boolean }) {
   return <div className={cn('rounded-2xl bg-violet-950/40 border border-violet-400/15 backdrop-blur-sm', hover && 'hover:border-fuchsia-400/30 hover:bg-violet-500/5 transition', className)}>{children}</div>
@@ -102,6 +102,25 @@ export function SectionTitle({ title, subtitle }: { title: string; subtitle?: st
     <div className="mb-4">
       <h3 className="font-display font-semibold text-violet-100">{title}</h3>
       {subtitle && <p className="text-xs text-violet-300/70 mt-0.5">{subtitle}</p>}
+    </div>
+  )
+}
+
+export function InfoNote({ title, children }: { title: string; children: ReactNode }) {
+  const [open, setOpen] = useState(true)
+  if (!open) return null
+  return (
+    <div className="relative rounded-2xl border border-sky-400/20 bg-sky-950/30 p-4 pr-10">
+      <button onClick={() => setOpen(false)} className="absolute top-3 right-3 text-sky-300/60 hover:text-sky-200 transition"><X size={15} /></button>
+      <div className="flex items-start gap-3">
+        <div className="w-8 h-8 rounded-lg bg-sky-500/15 flex items-center justify-center shrink-0 text-sky-300">
+          <Info size={16} />
+        </div>
+        <div>
+          <h3 className="font-semibold text-sky-100 text-sm">{title}</h3>
+          <div className="text-xs text-sky-200/70 mt-1 leading-relaxed space-y-1">{children}</div>
+        </div>
+      </div>
     </div>
   )
 }

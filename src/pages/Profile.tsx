@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { Card, Button, Input, Textarea, SectionTitle, Badge } from '../components/ui'
+import { Card, Button, Input, Textarea, SectionTitle, Badge, InfoNote } from '../components/ui'
 import { User, Save, Check } from 'lucide-react'
 
 export function Profile() {
@@ -32,6 +32,10 @@ export function Profile() {
 
   return (
     <div className="max-w-3xl space-y-6">
+      <InfoNote title="¿Qué es Mi Perfil?">
+        <p>Esta es tu ficha de usuario. Aquí actualizas tu información personal y profesional: nombre, contacto, licencias y firmas.</p>
+        <p>Tu perfil es lo que verán otros usuarios cuando interactúes en pools, contratos y oportunidades compartidas.</p>
+      </InfoNote>
       <Card className="p-6">
         <div className="flex items-center gap-4 mb-6">
           <div className="w-16 h-16 rounded-2xl navy-gradient flex items-center justify-center text-white text-xl font-bold neon-border">

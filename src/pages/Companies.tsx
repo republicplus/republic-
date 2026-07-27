@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { Card, Button, Input, Textarea, SectionTitle, Badge, Modal, EmptyState, Toggle } from '../components/ui'
+import { Card, Button, Input, Textarea, SectionTitle, Badge, Modal, EmptyState, Toggle, InfoNote } from '../components/ui'
 import { Building2, Plus, Pencil, Trash2, Sparkles } from 'lucide-react'
 import { useAICreate } from '../lib/useAICreate'
 
@@ -58,6 +58,11 @@ export function Companies() {
           <Button variant="gold" onClick={openNew}><Plus size={16} /> Nueva Empresa</Button>
         </div>
       </div>
+
+      <InfoNote title="¿Qué es Companies?">
+        <p>Registra y administra las empresas que participan en tus contratos: tu propia empresa, socios, subcontratistas y proveedores. Cada empresa tiene su información fiscal, NAICS, tipo y estado.</p>
+        <p>Usa esta sección para mantener un directorio actualizado de todas las entidades involucradas en tus operaciones.</p>
+      </InfoNote>
 
       {companies.length === 0 ? (
         <Card><EmptyState icon={<Building2 size={22} />} title="Sin empresas" subtitle="Crea tu perfil empresarial con certificaciones set-aside, NAICS, SAM y más." action={<Button variant="gold" onClick={openNew}><Plus size={16} /> Crear empresa</Button>} /></Card>

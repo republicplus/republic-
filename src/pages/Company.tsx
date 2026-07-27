@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { Card, Button, Input, Textarea, Badge, SectionTitle } from '../components/ui'
+import { Card, Button, Input, Textarea, Badge, SectionTitle, InfoNote } from '../components/ui'
 import { Building2, Save, Loader as Loader2, CircleCheck as CheckCircle2 } from 'lucide-react'
 
 const CERTS = ['sam_registration','small_business','minority_owned','woman_owned','veteran_owned','eight_a','hubzone','wosb','edwosb','sdvosb']
@@ -40,6 +40,10 @@ export function Company() {
         <h1 className="font-display text-2xl font-bold text-violet-100">Mi Empresa</h1>
         <p className="text-sm text-violet-300/70 mt-1">Perfil de tu compañía para licitaciones del gobierno</p>
       </div>
+      <InfoNote title="¿Qué es Mi Empresa?">
+        <p>Esta es la ficha de tu compañía. Aquí registras tu información fiscal, códigos NAICS, certificaciones gubernamentales, capacidad financiera y de bonding.</p>
+        <p>Mantén estos datos actualizados: se usan al presentar propuestas y registrar contratos con el gobierno.</p>
+      </InfoNote>
       <Card className="p-6 space-y-6">
         <SectionTitle title="1. Identidad" />
         <div className="grid grid-cols-2 gap-4">

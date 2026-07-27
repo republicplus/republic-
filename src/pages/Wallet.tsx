@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { Card, Button, Input, Select, Textarea, Badge, Modal, SectionTitle, EmptyState } from '../components/ui'
+import { Card, Button, Input, Select, Textarea, Badge, Modal, SectionTitle, EmptyState, InfoNote } from '../components/ui'
 import { Plus, Download, TrendingUp, Wallet as WalletIcon, ArrowUpRight, ArrowDownRight, Landmark, CreditCard, Package, TriangleAlert as AlertTriangle, Clock, Sparkles, Loader as Loader2, Link2 } from 'lucide-react'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts'
@@ -123,6 +123,11 @@ export function Wallet() {
         <h1 className="font-display text-2xl font-bold text-violet-100">Wallet</h1>
         <p className="text-sm text-violet-300/70 mt-1">Resumen financiero de tu operación</p>
       </div>
+
+      <InfoNote title="¿Qué es Wallet?">
+        <p>Administra tus finanzas: capital disponible, transacciones, facturas, fuentes de capital, reportes y alertas inteligentes.</p>
+        <p>Registra ingresos y egresos, conecta facturas a tus contratos y mantén visibilidad total sobre el efectivo que entra y sale de tu operación.</p>
+      </InfoNote>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-1 bg-violet-950/50 border border-violet-400/20 rounded-xl p-1 overflow-x-auto no-scrollbar">

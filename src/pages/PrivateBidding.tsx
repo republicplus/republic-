@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { Card, Button, Input, Textarea, Select, Badge, Modal, SectionTitle, EmptyState } from '../components/ui'
+import { Card, Button, Input, Textarea, Select, Badge, Modal, SectionTitle, EmptyState, InfoNote } from '../components/ui'
 import { ShieldCheck, Crown, Rocket, Send, Loader as Loader2, CircleCheck as CheckCircle2, Clock, FileText } from 'lucide-react'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
 
@@ -86,6 +86,11 @@ export function PrivateBidding() {
           Llena el formulario para que nuestro equipo revise tu caso y prepare una estrategia de licitación.
         </p>
       </div>
+
+      <InfoNote title="¿Qué son Licitaciones Privadas?">
+        <p>Este es nuestro servicio Done For You: accede a licitar con el gobierno de Estados Unidos sin tener que hacerlo tú mismo. Nuestro equipo prepara, aplica y gestiona las oportunidades por ti.</p>
+        <p>Elige un plan (Setup + Comisión o Flat Fee), llena el formulario con tus datos y nuestro equipo revisará tu caso para preparar una estrategia personalizada.</p>
+      </InfoNote>
 
       <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
         {plans.map((p) => {

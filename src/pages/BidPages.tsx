@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle } from '../components/ui'
+import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle, InfoNote } from '../components/ui'
 import { Plus, Search, Pencil, Trash2, Globe, Sparkles, Loader as Loader2, ExternalLink, Filter, Eye, CircleCheck as CheckCircle2 } from 'lucide-react'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
 
@@ -107,6 +107,11 @@ export function BidPages() {
         <h1 className="font-display text-2xl font-bold text-violet-100">Bid Pages</h1>
         <p className="text-sm text-violet-300/70 mt-1">Directorio de plataformas de licitaciones públicas y privadas</p>
       </div>
+
+      <InfoNote title="¿Qué es Bid Pages?">
+        <p>Aquí gestionas tu directorio de plataformas de licitaciones públicas y privadas. Registra cada portal con su tipo (gratis, pago o mixto), categoría, país, precio de suscripción y notas.</p>
+        <p>Puedes agregar páginas manualmente o pegar una lista de URLs y dejar que la IA extraiga y organice la información automáticamente.</p>
+      </InfoNote>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">

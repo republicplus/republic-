@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { Card, Button, Input, Badge, SectionTitle } from '../components/ui'
+import { Card, Button, Input, Badge, SectionTitle, InfoNote } from '../components/ui'
 import { Gauge, Sparkles, RefreshCw } from 'lucide-react'
 import { cn, formatCurrency } from '../lib/utils'
 import { RadialBarChart, RadialBar, ResponsiveContainer, PolarAngleAxis, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
@@ -70,6 +70,10 @@ export function Risk() {
 
   return (
     <div className="space-y-6">
+      <InfoNote title="¿Qué es Análisis de Riesgo?">
+        <p>Evalúa tu capacidad de licitación en tiempo real: el motor calcula tu capital disponible (propio + inversionistas + aseguradoras + liquidez), lo compara con el capital comprometido y determina tu nivel de riesgo.</p>
+        <p>Guarda evaluaciones para llevar un historial de cómo cambia tu exposición a medida que asumes nuevos contratos.</p>
+      </InfoNote>
       <div className="flex justify-end">
         <Button variant="gold" onClick={saveAssessment}><RefreshCw size={15} /> Guardar evaluación</Button>
       </div>

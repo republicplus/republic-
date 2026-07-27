@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState } from '../components/ui'
+import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, InfoNote } from '../components/ui'
 import { Plus, ExternalLink, Search, Trash2, Link2, Wrench, FileText, Pencil, Sparkles, Loader as Loader2 } from 'lucide-react'
 import { cn } from '../lib/utils'
 
@@ -101,6 +101,10 @@ export function Tools() {
 
   return (
     <div className="space-y-6">
+      <InfoNote title="¿Qué es Tools?">
+        <p>Reúne en un solo lugar todos los portales de licitación y herramientas que usas: SAM.gov, SBA, FPDS y más. Agrega enlaces personalizados o crea nuevos con IA.</p>
+        <p>Las Bid Pages son portales donde buscas oportunidades; los Tools Links son recursos y utilidades para tu operación diaria.</p>
+      </InfoNote>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-950/50 border border-violet-400/20 text-sm text-violet-300/70">
           <Search size={15} />

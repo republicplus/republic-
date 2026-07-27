@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { Card, Button, Input, Textarea, Badge, Modal, EmptyState, SectionTitle } from '../components/ui'
+import { Card, Button, Input, Textarea, Badge, Modal, EmptyState, SectionTitle, InfoNote } from '../components/ui'
 import { Plus, Search, Trash2, FileText, Image as ImageIcon, StickyNote, Upload, Download, Filter } from 'lucide-react'
 import { cn, formatDate } from '../lib/utils'
 
@@ -119,6 +119,10 @@ export function Documents() {
 
   return (
     <div className="space-y-6">
+      <InfoNote title="¿Qué es Documentos?">
+        <p>Centraliza todos los documentos de tus contratos, empresas y operaciones: contratos firmados, propuestas, facturas, certificaciones y más.</p>
+        <p>Sube archivos PDF o imágenes, organízalos por tipo y carpeta, y mantenlos siempre accesibles para cuando los necesites.</p>
+      </InfoNote>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-950/50 border border-violet-400/20 text-sm text-violet-300/70">
