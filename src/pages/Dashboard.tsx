@@ -1,127 +1,36 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { useAuth } from '../lib/auth'
-import { AIOrb } from '../components/AIOrb'
-import { Card, Button, Badge, Input } from '../components/ui'
-import { Plus, Send, Save, Folder, Search, MessageSquare, Sparkles, Trash2, Wallet as WalletIcon, TrendingUp, ArrowDownRight, Clock, CreditCard, Package } from 'lucide-react'
-import { cn, formatCurrency, formatDate, daysUntil } from '../lib/utils'
-
-interface Chat { id: string; title: string; folder: string | null; updated_at: string }
-interface Msg { id: string; role: string; content: string }
-
-const SUGGESTIONS = [
-  'Explícame la cláusula FAR 52.232-1',
-  '¿Cómo registro mi empresa en SAM.gov?',
-  '¿Qué códigos NAICS necesito para IT?',
-  'Redacta un capability statement',
-  'Calcula el margen de un contrato de $250k',
-  'Recomienda proveedores Net 30 para office supplies',
-]
-
-function aiReply(prompt: string): string {
-  const p = prompt.toLowerCase()
-  if (p.includes('far')) return 'La Federal Acquisition Regulation (FAR) es el conjunto de reglas que rige las adquisiciones del gobierno federal de EE.UU. La cláusula FAR 52.232-1 establece que el gobierno paga en términos net 30 días tras recibir una factura adecuada y la aceptación de los bienes/servicios. Para cumplir, asegúrate de facturar a través del sistema correcto (WAWF/IPAC) y mantener documentación de aceptación.'
-  if (p.includes('sam')) return 'Para registrarte en SAM.gov: 1) Crea una cuenta en login.gov con identidad verificada, 2) Inicia sesión en SAM.gov y selecciona "Register Entity", 3) Completa las secciones: Core Data, Assertions, Representations & Certifications, Points of Contact, y 4) Envía para validación (puede tardar 7-10 días). La renovación es anual.'
-  if (p.includes('naics')) return 'Los códigos NAICS clasifican tu negocio por industria. Para IT, los comunes son: 541512 (Diseño de sistemas), 541511 (Programación), 518210 (Hosting). Verifica el size standard en SBA según tu revenue o empleados. Un código correcto es crítico para ganar set-aside contracts.'
-  if (p.includes('capability')) return 'Un Capability Statement es tu tarjeta de presentación federal. Estructura: 1) Resumen ejecutivo (2-3 líneas), 2) Diferenciadores, 3) Capacidades core, 4) Set-aside certifications, 5) Past performance, 6) Datos de contacto. Mantenlo a 1-2 páginas en PDF con tu branding.'
-  if (p.includes('margen') || p.includes('margin')) return 'Para un contrato de $250,000: si tus costos (producto + shipping + overhead) son $175,000, tu ganancia es $75,000 = 30% de margen. En government contracting, márgenes típicos son 15-35%. Considera overhead G&A (8-12%) y fees de cumplimiento.'
-  if (p.includes('net 30') || p.includes('proveedor')) return 'Para office supplies Net 30, busca proveedores con: distribución nacional, términos de crédito establecidos, y capacidad de envío a agencias. Verifica que acepten POs gubernamentales y ofrezcan W-9. Plataformas como ArcaBid te permiten guardar y comparar proveedores por rating y estados.'
-  if (p.includes('capital') || p.includes('financ')) return 'Opciones de capital para contratos: 1) Factoring (vender facturas, 1-3% fee), 2) Purchase Order Financing (cubrir costos del proveedor), 3) SBA CAPLines (líneas para contratos), 4) MCA (avance sobre efectivo, más caro), 5) Invoice Financing. Elige según tu ciclo de caja y margen.'
-  if (p.includes('sba')) return 'La SBA ofrece: 8(a) Business Development (9 años, firmas en desventaja), HUBZone (áreas designadas), WOSB/EDWOSB (mujeres), SDVOSB (veteranos). Estas certificaciones abren set-aside contracts exclusivos. Reúne documentación y aplica en SBA.gov.'
-  return 'Soy el Orbe AI de ArcaBid, especializado en Government Contracting. Puedo ayudarte con: cláusulas FAR, registro SAM.gov, códigos NAICS/PSC, redacción de propuestas, pricing y márgenes, proveedores Net 30, fuentes de capital, compliance, cronogramas de entrega y más. ¿Sobre cuál de estos temas quieres profundizar?'
-}
+import { Card, Badge, SectionTitle } from '../components/ui'
+import { formatCurrency, formatDate } from '../lib/utils'
+import { Wallet as WalletIcon, TrendingUp, ArrowDownRight, Clock, CreditCard, Package, FileText } from 'lucide-react'
 
 export function Dashboard() {
-  const { user } = useAuth()
-  const [chats, setChats] = useState<Chat[]>([])
-  const [activeChat, setActiveChat] = useState<Chat | null>(null)
-  const [messages, setMessages] = useState<Msg[]>([])
-  const [input, setInput] = useState('')
-  const [search, setSearch] = useState('')
-  const [thinking, setThinking] = useState(false)
   const [contracts, setContracts] = useState<any[]>([])
-  const [wallet, setWallet] = useState<any[]>([])
   const [capitalSources, setCapitalSources] = useState<any[]>([])
   const [invoices, setInvoices] = useState<any[]>([])
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const [wallet, setWallet] = useState<any[]>([])
 
-  useEffect(() => { loadChats(); loadDashboard() }, [])
+  useEffect(() => { load() }, [])
 
-  useEffect(() => { if (activeChat) loadMessages(activeChat.id) }, [activeChat])
-
-  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }) }, [messages, thinking])
-
-  async function loadChats() {
-    const { data } = await supabase.from('ai_chats').select('*').order('updated_at', { ascending: false })
-    if (data) setChats(data)
-  }
-  async function loadMessages(chatId: string) {
-    const { data } = await supabase.from('ai_messages').select('*').eq('chat_id', chatId).order('created_at')
-    if (data) setMessages(data as unknown as Msg[])
-  }
-  async function loadDashboard() {
+  async function load() {
     const { data: c } = await supabase.from('contracts').select('*').order('created_at', { ascending: false })
     if (c) setContracts(c)
-    const { data: w } = await supabase.from('wallet_transactions').select('*').order('date', { ascending: false }).limit(5)
-    if (w) setWallet(w)
     const { data: caps } = await supabase.from('capital_sources').select('*')
     if (caps) setCapitalSources(caps)
-    const { data: inv } = await supabase.from('contract_invoices').select('*').eq('status','pending')
+    const { data: inv } = await supabase.from('contract_invoices').select('*').eq('status', 'pending')
     if (inv) setInvoices(inv)
+    const { data: w } = await supabase.from('wallet_transactions').select('*').order('date', { ascending: false }).limit(5)
+    if (w) setWallet(w)
   }
-
-  async function newChat() {
-    const { data } = await supabase.from('ai_chats').insert({ title: 'New chat' }).select().single()
-    if (data) { setActiveChat(data); setMessages([]); loadChats(); }
-  }
-
-  async function send() {
-    if (!input.trim()) return
-    let chat = activeChat
-    if (!chat) {
-      const { data } = await supabase.from('ai_chats').insert({ title: input.slice(0, 40) }).select().single()
-      if (data) { chat = data; setActiveChat(data); loadChats(); }
-    }
-    const userMsg = input.trim()
-    setInput('')
-    setThinking(true)
-    await supabase.from('ai_messages').insert({ chat_id: chat!.id, role: 'user', content: userMsg })
-    setMessages((m) => [...m, { id: 'tmp-u', role: 'user', content: userMsg }])
-    if (chat!.title === 'New chat') {
-      await supabase.from('ai_chats').update({ title: userMsg.slice(0, 40), updated_at: new Date().toISOString() }).eq('id', chat!.id)
-      loadChats()
-    }
-    setTimeout(async () => {
-      const reply = aiReply(userMsg)
-      await supabase.from('ai_messages').insert({ chat_id: chat!.id, role: 'assistant', content: reply })
-      setMessages((m) => [...m, { id: 'tmp-a', role: 'assistant', content: reply }])
-      setThinking(false)
-    }, 700)
-  }
-
-  async function deleteChat(id: string) {
-    await supabase.from('ai_chats').delete().eq('id', id)
-    if (activeChat?.id === id) { setActiveChat(null); setMessages([]) }
-    loadChats()
-  }
-
-  const filteredChats = chats.filter((c) => c.title.toLowerCase().includes(search.toLowerCase()))
-
-  const activeContracts = contracts.filter((c) => c.status === 'won' || c.status === 'awarded')
-  const pending = contracts.filter((c) => c.status === 'pending' || c.status === 'applied' || c.status === 'review')
-  const upcomingDeliveries = contracts.filter((c) => c.delivery_date && (daysUntil(c.delivery_date) ?? 999) >= 0).sort((a, b) => new Date(a.delivery_date).getTime() - new Date(b.delivery_date).getTime()).slice(0, 4)
-  const upcomingPayments = contracts.filter((c) => c.payment_date && (daysUntil(c.payment_date) ?? 999) >= 0).sort((a, b) => new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime()).slice(0, 4)
-  const totalValue = activeContracts.reduce((s, c) => s + (c.total_value || 0), 0)
-  const pendingValue = pending.reduce((s, c) => s + (c.total_value || 0), 0)
 
   const availableCapital = capitalSources.reduce((s, c) => s + (c.available_amount || 0), 0)
-  const projectedProfit = contracts.reduce((s, c) => s + (c.estimated_profit || (c.fixed_profit || (c.total_value * (c.profit_pct || 0) / 100) || 0)), 0)
+  const projectedProfit = contracts.reduce((s, c) => s + (c.estimated_profit || 0), 0)
   const receivedProfit = wallet.filter((t) => t.amount > 0 && t.type === 'income').reduce((s, t) => s + t.amount, 0)
   const receivable = invoices.filter((i) => i.status !== 'paid').reduce((s, i) => s + (i.amount || 0), 0)
   const payable = wallet.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0)
   const totalContractValue = contracts.reduce((s, c) => s + (c.total_value || 0), 0)
 
-  const finKpis = [
+  const kpis = [
     { label: 'Capital Disponible', value: formatCurrency(availableCapital), icon: WalletIcon, tone: 'gold' as const },
     { label: 'Ganancia Proyectada', value: formatCurrency(projectedProfit), icon: TrendingUp, tone: 'success' as const },
     { label: 'Ganancia Recibida', value: formatCurrency(receivedProfit), icon: ArrowDownRight, tone: 'info' as const },
@@ -130,18 +39,15 @@ export function Dashboard() {
     { label: 'Valor Total Contratos', value: formatCurrency(totalContractValue), icon: Package, tone: 'neutral' as const },
   ]
 
-  const kpis = [
-    { label: 'Contratos Activos', value: activeContracts.length.toString(), tone: 'success' as const, sub: formatCurrency(totalValue) },
-    { label: 'Licitaciones Pendientes', value: pending.length.toString(), tone: 'warning' as const, sub: formatCurrency(pendingValue) },
-    { label: 'Próximas Entregas', value: upcomingDeliveries.length.toString(), tone: 'info' as const, sub: 'en 30 días' },
-    { label: 'Capital Disponible', value: formatCurrency(0), tone: 'gold' as const, sub: 'Wallet' },
-  ]
-
   return (
     <div className="space-y-6">
-      {/* Financial summary cards */}
+      <div>
+        <h1 className="font-display text-2xl font-bold text-violet-100">Dashboard</h1>
+        <p className="text-sm text-violet-300/70 mt-1">Resumen financiero de tu operación</p>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {finKpis.map((k) => {
+        {kpis.map((k) => {
           const Icon = k.icon
           return (
             <Card key={k.label} hover className="p-5">
@@ -156,142 +62,48 @@ export function Dashboard() {
         })}
       </div>
 
-    <div className="grid grid-cols-12 gap-6">
-      {/* AI section */}
-      <div className="col-span-12 xl:col-span-8 space-y-6">
-        <Card className="overflow-hidden">
-          <div className="navy-gradient p-8 flex flex-col items-center text-center relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-fuchsia-500/20 blur-3xl" />
-            <AIOrb size={120} active={thinking} />
-            <h2 className="font-display text-2xl font-bold text-white mt-6 neon-text">Orbe de Inteligencia Artificial</h2>
-            <p className="text-violet-200 text-sm mt-1.5 max-w-md">
-              Especializado en Government Contracting — FAR, SAM.gov, SBA, NAICS, propuestas, pricing, capital y más.
-            </p>
-          </div>
-
-          <div className="flex h-[420px]">
-            {/* chat list */}
-            <div className="w-56 border-r border-violet-400/15 flex flex-col">
-              <div className="p-3 border-b border-violet-400/15">
-                <Button variant="gold" size="sm" className="w-full" onClick={newChat}><Plus size={14} /> Nuevo Chat</Button>
-              </div>
-              <div className="px-3 py-2">
-                <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-violet-950/50 text-violet-300/70 text-xs border border-violet-400/20">
-                  <Search size={13} />
-                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar…" className="bg-transparent outline-none flex-1" />
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card className="p-6">
+          <SectionTitle title="Contratos Recientes" />
+          {contracts.length === 0 ? (
+            <p className="text-sm text-violet-300/70 py-6 text-center">Sin contratos aún</p>
+          ) : (
+            <div className="space-y-2">
+              {contracts.slice(0, 5).map((c) => (
+                <div key={c.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-violet-400/15 hover:bg-violet-500/5 transition">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-violet-500/10 flex items-center justify-center text-fuchsia-400"><FileText size={16} /></div>
+                    <div>
+                      <div className="text-sm font-medium text-violet-100">{c.title}</div>
+                      <div className="text-xs text-violet-300/70">{c.agency || '—'} · {formatDate(c.due_date)}</div>
+                    </div>
+                  </div>
+                  <span className="text-sm font-semibold text-violet-100">{formatCurrency(c.total_value)}</span>
                 </div>
-              </div>
-              <div className="flex-1 overflow-y-auto no-scrollbar px-2 pb-2 space-y-0.5">
-                {filteredChats.length === 0 && <div className="text-xs text-violet-300/70 text-center py-6">Sin conversaciones</div>}
-                {filteredChats.map((c) => (
-                  <div key={c.id} className={cn('group flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition', activeChat?.id === c.id ? 'bg-fuchsia-500/15 text-fuchsia-200 border border-fuchsia-400/30' : 'hover:bg-violet-500/10 text-violet-300/80')} onClick={() => setActiveChat(c)}>
-                    <MessageSquare size={14} className={activeChat?.id === c.id ? 'text-fuchsia-400' : 'text-violet-400'} />
-                    <span className="text-xs truncate flex-1">{c.title}</span>
-                    <button onClick={(e) => { e.stopPropagation(); deleteChat(c.id) }} className="opacity-0 group-hover:opacity-100 text-violet-400 hover:text-rose-400 transition"><Trash2 size={13} /></button>
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
+          )}
+        </Card>
 
-            {/* messages */}
-            <div className="flex-1 flex flex-col">
-              <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar p-5 space-y-4">
-                {messages.length === 0 && !thinking && (
-                  <div className="h-full flex flex-col items-center justify-center text-center">
-                    <Sparkles size={28} className="text-fuchsia-400 mb-3" />
-                    <p className="text-sm text-violet-300/70 max-w-xs">Pregúntame sobre FAR, SAM.gov, NAICS, propuestas, pricing, capital o proveedores.</p>
-                    <div className="grid grid-cols-2 gap-2 mt-5 max-w-md">
-                      {SUGGESTIONS.slice(0, 4).map((s) => (
-                        <button key={s} onClick={() => { setInput(s); }} className="text-left text-xs text-violet-200 px-3 py-2 rounded-xl border border-violet-400/20 hover:border-fuchsia-400/40 hover:bg-violet-500/10 transition">{s}</button>
-                      ))}
-                    </div>
+        <Card className="p-6">
+          <SectionTitle title="Transacciones Recientes" />
+          {wallet.length === 0 ? (
+            <p className="text-sm text-violet-300/70 py-6 text-center">Sin transacciones aún</p>
+          ) : (
+            <div className="space-y-2">
+              {wallet.map((t) => (
+                <div key={t.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-violet-400/15">
+                  <div>
+                    <div className="text-sm font-medium text-violet-100">{t.description || t.type}</div>
+                    <div className="text-xs text-violet-300/70">{formatDate(t.date)}</div>
                   </div>
-                )}
-                {messages.map((m) => (
-                  <div key={m.id} className={cn('flex gap-3 animate-fade-up', m.role === 'user' ? 'justify-end' : '')}>
-                    {m.role === 'assistant' && <div className="w-7 h-7 rounded-lg navy-gradient flex items-center justify-center shrink-0"><Sparkles size={13} className="text-fuchsia-400" /></div>}
-                    <div className={cn('max-w-[75%] px-4 py-2.5 rounded-2xl text-sm', m.role === 'user' ? 'bg-violet-900 text-white' : 'bg-violet-500/10 text-violet-100')}>
-                      {m.content}
-                    </div>
-                  </div>
-                ))}
-                {thinking && (
-                  <div className="flex gap-3 animate-fade-in">
-                    <div className="w-7 h-7 rounded-lg navy-gradient flex items-center justify-center shrink-0"><Sparkles size={13} className="text-fuchsia-400" /></div>
-                    <div className="bg-violet-500/10 px-4 py-3 rounded-2xl flex gap-1">
-                      {[0,1,2].map((i) => <span key={i} className="w-1.5 h-1.5 rounded-full bg-fuchsia-400 animate-pulse-soft" style={{ animationDelay: `${i*0.2}s` }} />)}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="p-3 border-t border-violet-400/15 flex gap-2">
-                <Input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="Escribe tu pregunta…" className="flex-1" />
-                <Button variant="primary" onClick={send}><Send size={15} /></Button>
-              </div>
+                  <span className={t.amount >= 0 ? 'text-sm font-semibold text-teal-300' : 'text-sm font-semibold text-rose-300'}>{formatCurrency(t.amount)}</span>
+                </div>
+              ))}
             </div>
-          </div>
+          )}
         </Card>
       </div>
-
-      {/* KPIs + activity */}
-      <div className="col-span-12 xl:col-span-4 space-y-6">
-        <div className="grid grid-cols-2 gap-4">
-          {kpis.map((k) => (
-            <Card key={k.label} hover className="p-5">
-              <div className="text-xs text-violet-300/70">{k.label}</div>
-              <div className="font-display text-2xl font-bold text-violet-100 mt-1">{k.value}</div>
-              <div className="mt-2"><Badge tone={k.tone}>{k.sub}</Badge></div>
-            </Card>
-          ))}
-        </div>
-
-        <Card className="p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-violet-100">Próximas Entregas</h3>
-            <Badge tone="info">{upcomingDeliveries.length}</Badge>
-          </div>
-          <div className="space-y-2.5">
-            {upcomingDeliveries.length === 0 && <p className="text-sm text-violet-300/70">Sin entregas próximas.</p>}
-            {upcomingDeliveries.map((c) => (
-              <div key={c.id} className="flex items-center justify-between text-sm">
-                <span className="truncate text-violet-200">{c.title}</span>
-                <span className="text-xs text-violet-300/70 shrink-0 ml-2">{formatDate(c.delivery_date)}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card className="p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-violet-100">Próximos Pagos</h3>
-            <Badge tone="gold">{upcomingPayments.length}</Badge>
-          </div>
-          <div className="space-y-2.5">
-            {upcomingPayments.length === 0 && <p className="text-sm text-violet-300/70">Sin pagos próximos.</p>}
-            {upcomingPayments.map((c) => (
-              <div key={c.id} className="flex items-center justify-between text-sm">
-                <span className="truncate text-violet-200">{c.title}</span>
-                <span className="text-xs text-violet-300/70 shrink-0 ml-2">{formatCurrency(c.total_value)}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card className="p-5">
-          <h3 className="font-semibold text-violet-100 mb-3">Actividad Reciente</h3>
-          <div className="space-y-2.5">
-            {wallet.length === 0 && contracts.length === 0 && <p className="text-sm text-violet-300/70">Sin actividad aún.</p>}
-            {contracts.slice(0, 4).map((c) => (
-              <div key={c.id} className="flex items-center gap-2 text-sm">
-                <span className={cn('w-2 h-2 rounded-full', c.status === 'won' ? 'bg-teal-400' : 'bg-amber-400')} />
-                <span className="truncate text-violet-200 flex-1">{c.title}</span>
-                <span className="text-xs text-violet-300/70 capitalize">{c.status}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-    </div>
     </div>
   )
 }

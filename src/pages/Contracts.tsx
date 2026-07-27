@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle } from '../components/ui'
-import { FileText, Plus, Search, Sparkles, Upload, Loader as Loader2, Heart, TrendingUp, TriangleAlert as AlertTriangle, Clock } from 'lucide-react'
+import { FileText, Plus, Search, Sparkles, Upload, Loader as Loader2, Heart } from 'lucide-react'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
 
 const STATUSES = ['identificado','analizando','preparando','propuesta_enviada','evaluacion','ganado','perdido','ejecucion','entregado','facturado','pagado','cerrado']
@@ -38,8 +38,6 @@ export function Contracts() {
   const [aiOpen, setAiOpen] = useState(false)
   const [draft, setDraft] = useState<any>({ title: '', status: 'identificado', priority: 'media', type: 'Servicio' })
   const [view, setView] = useState<'grid' | 'table'>('grid')
-
-  // AI upload state
   const [aiFile, setAiFile] = useState<File | null>(null)
   const [aiImageUrl, setAiImageUrl] = useState<string | null>(null)
   const [aiBusy, setAiBusy] = useState(false)
@@ -75,10 +73,7 @@ export function Contracts() {
     if (!aiFile) return
     setAiBusy(true)
     try {
-      let fileUrl: string | null = null
-      let fileType = aiFile.type
       let content: any = { question: 'Analiza este documento de contrato, extrae toda la información y crea un contrato en el sistema.' }
-
       if (aiFile.type.startsWith('image/')) {
         content.imageUrl = aiImageUrl
       } else if (aiFile.type === 'application/pdf') {
@@ -87,11 +82,9 @@ export function Contracts() {
         const { error: upErr } = await supabase.storage.from('documents').upload(path, aiFile)
         if (upErr) throw upErr
         const { data: pub } = supabase.storage.from('documents').getPublicUrl(path)
-        fileUrl = pub.publicUrl
-        content.fileUrl = fileUrl
+        content.fileUrl = pub.publicUrl
         content.fileType = 'pdf'
       }
-
       const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`
       const res = await fetch(fnUrl, {
         method: 'POST',
@@ -101,15 +94,10 @@ export function Contracts() {
       if (!res.ok) throw new Error('Error al analizar')
       const data = await res.json()
       const extracted = data.extracted || {}
-
-      // Now create the contract from extracted data
       const createRes = await fetch(fnUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({
-          question: `Crea un contrato con estos datos: ${JSON.stringify(extracted)}`,
-          mode: 'create',
-        }),
+        body: JSON.stringify({ question: `Crea un contrato con estos datos: ${JSON.stringify(extracted)}`, mode: 'create' }),
       })
       if (!createRes.ok) throw new Error('Error al crear contrato')
       const createData = await createRes.json()
@@ -131,6 +119,11 @@ export function Contracts() {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="font-display text-2xl font-bold text-violet-100">Contratos</h1>
+        <p className="text-sm text-violet-300/70 mt-1">Gestiona tus oportunidades y contratos gubernamentales</p>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-950/50 border border-violet-400/20 text-sm text-violet-300/70">
@@ -159,17 +152,55 @@ export function Contracts() {
           {filtered.map((c) => <ContractCard key={c.id} contract={c} onClick={() => nav(`/app/contracts/${c.id}`)} />)}
         </div>
       ) : (
-        <ContractTable contracts={filtered} onClick={(id) => nav(`/app/contracts/${id}`)} />
+        <Card className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-violet-400/15 text-left text-xs text-violet-300/70">
+                <th className="px-4 py-3 font-medium">Nombre</th>
+                <th className="px-4 py-3 font-medium">Agencia</th>
+                <th className="px-4 py-3 font-medium">Estado</th>
+                <th className="px-4 py-3 font-medium">Valor</th>
+                <th className="px-4 py-3 font-medium">Capital req.</th>
+                <th className="px-4 py-3 font-medium">Ganancia est.</th>
+                <th className="px-4 py-3 font-medium">Cierre</th>
+                <th className="px-4 py-3 font-medium">Entrega</th>
+                <th className="px-4 py-3 font-medium">Pago</th>
+                <th className="px-4 py-3 font-medium">Health</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((c) => {
+                const health = healthColor(c.health_score || 0)
+                return (
+                  <tr key={c.id} onClick={() => nav(`/app/contracts/${c.id}`)} className="border-b border-violet-400/10 hover:bg-violet-500/5 cursor-pointer transition">
+                    <td className="px-4 py-3 text-violet-100 font-medium">{c.title}</td>
+                    <td className="px-4 py-3 text-violet-300/70">{c.agency || '—'}</td>
+                    <td className="px-4 py-3"><Badge tone={STATUS_TONE[c.status]}>{STATUS_LABEL[c.status] || c.status}</Badge></td>
+                    <td className="px-4 py-3 text-violet-100">{formatCurrency(c.total_value)}</td>
+                    <td className="px-4 py-3 text-violet-200">{formatCurrency(c.capital_required)}</td>
+                    <td className="px-4 py-3 text-teal-300">{formatCurrency(c.estimated_profit)}</td>
+                    <td className="px-4 py-3 text-violet-300/70">{formatDate(c.due_date)}</td>
+                    <td className="px-4 py-3 text-violet-300/70">{formatDate(c.delivery_date)}</td>
+                    <td className="px-4 py-3 text-violet-300/70">{formatDate(c.payment_date)}</td>
+                    <td className="px-4 py-3">
+                      {(c.health_score || 0) > 0 ? (
+                        <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full', health.bg, health.color)}>{c.health_score}</span>
+                      ) : <span className="text-violet-400/50">—</span>}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </Card>
       )}
 
-      {/* Detailed contract modal */}
       <Modal open={open} onClose={() => setOpen(false)} title="Nuevo contrato" wide>
         <div className="space-y-5">
           <SectionTitle title="1. Información General" />
           <div className="grid grid-cols-2 gap-4">
             <Input label="Nombre del contrato" value={draft.title || ''} onChange={(e) => set('title', e.target.value)} />
             <Input label="Número de licitación" value={draft.solicitation_number || ''} onChange={(e) => set('solicitation_number', e.target.value)} />
-            <Input label="Número de contrato" value={draft.contract_number || ''} onChange={(e) => set('contract_number', e.target.value)} />
             <Input label="Agencia" value={draft.agency || ''} onChange={(e) => set('agency', e.target.value)} />
             <Select label="Tipo" value={draft.type || 'Servicio'} onChange={(e) => set('type', e.target.value)}>
               {CONTRACT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -180,82 +211,32 @@ export function Contracts() {
             <Select label="Prioridad" value={draft.priority || 'media'} onChange={(e) => set('priority', e.target.value)}>
               {PRIORITIES.map((p) => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
             </Select>
-            <Input label="Empresa que licita" value={draft.company_id || ''} onChange={(e) => set('company_id', e.target.value)} />
           </div>
 
           <SectionTitle title="2. Fechas" />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Fecha de publicación" type="date" value={draft.publication_date || ''} onChange={(e) => set('publication_date', e.target.value)} />
             <Input label="Fecha límite para ofertar" type="date" value={draft.due_date || ''} onChange={(e) => set('due_date', e.target.value)} />
-            <Input label="Fecha estimada de adjudicación" type="date" value={draft.award_date || ''} onChange={(e) => set('award_date', e.target.value)} />
-            <Input label="Fecha de inicio" type="date" value={draft.start_date || ''} onChange={(e) => set('start_date', e.target.value)} />
             <Input label="Fecha de entrega" type="date" value={draft.delivery_date || ''} onChange={(e) => set('delivery_date', e.target.value)} />
             <Input label="Fecha estimada de pago" type="date" value={draft.payment_date || ''} onChange={(e) => set('payment_date', e.target.value)} />
+            <Input label="Fecha de inicio" type="date" value={draft.start_date || ''} onChange={(e) => set('start_date', e.target.value)} />
           </div>
 
           <SectionTitle title="3. Información Financiera" />
           <div className="grid grid-cols-2 gap-4">
             <Input label="Valor estimado ($)" type="number" value={draft.total_value || ''} onChange={(e) => set('total_value', +e.target.value)} />
-            <Input label="Valor ofertado ($)" type="number" value={draft.bid_value || ''} onChange={(e) => set('bid_value', +e.target.value)} />
             <Input label="Capital requerido ($)" type="number" value={draft.capital_required || ''} onChange={(e) => set('capital_required', +e.target.value)} />
             <Input label="Costo estimado ($)" type="number" value={draft.estimated_cost || ''} onChange={(e) => set('estimated_cost', +e.target.value)} />
             <Input label="Ganancia estimada ($)" type="number" value={draft.estimated_profit || ''} onChange={(e) => set('estimated_profit', +e.target.value)} />
-            <Input label="Margen (%)" type="number" value={draft.margin || ''} onChange={(e) => set('margin', +e.target.value)} />
           </div>
 
           <SectionTitle title="4. Producto o Servicio" />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Categoría" value={draft.category || ''} onChange={(e) => set('category', e.target.value)} />
-            <Input label="Cantidad" type="number" value={draft.quantity || ''} onChange={(e) => set('quantity', +e.target.value)} />
-            <Input label="Unidad de medida" value={draft.unit_of_measure || ''} onChange={(e) => set('unit_of_measure', e.target.value)} />
             <Input label="Código NAICS" value={draft.naics || ''} onChange={(e) => set('naics', e.target.value)} />
             <Input label="Código PSC" value={draft.psc || ''} onChange={(e) => set('psc', e.target.value)} />
           </div>
-          <Textarea label="Descripción del producto/servicio" value={draft.product || ''} onChange={(e) => set('product', e.target.value)} />
+          <Textarea label="Descripción" value={draft.product || ''} onChange={(e) => set('product', e.target.value)} />
 
-          <SectionTitle title="5. Entrega" />
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Dirección de entrega" value={draft.delivery_address || ''} onChange={(e) => set('delivery_address', e.target.value)} />
-            <Input label="Ciudad" value={draft.delivery_city || ''} onChange={(e) => set('delivery_city', e.target.value)} />
-            <Input label="Estado" value={draft.delivery_state || ''} onChange={(e) => set('delivery_state', e.target.value)} />
-            <Input label="Código postal" value={draft.delivery_zip || ''} onChange={(e) => set('delivery_zip', e.target.value)} />
-            <Input label="Persona de contacto" value={draft.delivery_contact || ''} onChange={(e) => set('delivery_contact', e.target.value)} />
-            <Input label="Teléfono" value={draft.delivery_phone || ''} onChange={(e) => set('delivery_phone', e.target.value)} />
-            <Input label="Método de entrega" value={draft.delivery_method || ''} onChange={(e) => set('delivery_method', e.target.value)} />
-          </div>
-
-          <SectionTitle title="6. Proveedores" />
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Proveedor principal" value={draft.supplier || ''} onChange={(e) => set('supplier', e.target.value)} />
-            <Input label="Proveedor secundario" value={draft.supplier_secondary || ''} onChange={(e) => set('supplier_secondary', e.target.value)} />
-            <Select label="Estado de cotización" value={draft.quote_status || ''} onChange={(e) => set('quote_status', e.target.value)}>
-              <option value="">—</option>
-              <option value="pendiente">Pendiente</option>
-              <option value="solicitada">Solicitada</option>
-              <option value="recibida">Recibida</option>
-              <option value="aprobada">Aprobada</option>
-            </Select>
-            <div className="flex items-end">
-              <label className="flex items-center gap-2 text-sm text-violet-200 pb-2.5">
-                <input type="checkbox" checked={draft.purchase_order_created || false} onChange={(e) => set('purchase_order_created', e.target.checked)} className="w-4 h-4 rounded accent-fuchsia-500" />
-                Orden de compra creada
-              </label>
-            </div>
-          </div>
-
-          <SectionTitle title="7. Capital" />
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Fuente del capital" value={draft.capital_source || ''} onChange={(e) => set('capital_source', e.target.value)} />
-            <Input label="Capital asegurado ($)" type="number" value={draft.insured_capital || ''} onChange={(e) => set('insured_capital', +e.target.value)} />
-            <div className="flex items-end">
-              <label className="flex items-center gap-2 text-sm text-violet-200 pb-2.5">
-                <input type="checkbox" checked={draft.financing_approved || false} onChange={(e) => set('financing_approved', e.target.checked)} className="w-4 h-4 rounded accent-fuchsia-500" />
-                Financiamiento aprobado
-              </label>
-            </div>
-          </div>
-
-          <SectionTitle title="8. Notas" />
+          <SectionTitle title="5. Notas" />
           <Textarea label="Observaciones" value={draft.notes || ''} onChange={(e) => set('notes', e.target.value)} />
           <Textarea label="Riesgos" value={draft.risk_notes || ''} onChange={(e) => set('risk_notes', e.target.value)} />
           <Textarea label="Próximos pasos" value={draft.next_steps || ''} onChange={(e) => set('next_steps', e.target.value)} />
@@ -267,14 +248,10 @@ export function Contracts() {
         </div>
       </Modal>
 
-      {/* AI upload modal */}
       <Modal open={aiOpen} onClose={() => { setAiOpen(false); setAiFile(null); setAiImageUrl(null) }} title="Crear contrato con AI" wide>
         <div className="space-y-4">
           <p className="text-sm text-violet-300/70">Sube una captura de pantalla o un PDF del contrato y la AI extraerá toda la información para crearlo automáticamente.</p>
-          <div
-            onClick={() => fileRef.current?.click()}
-            className="border-2 border-dashed border-violet-400/30 rounded-xl p-8 text-center cursor-pointer hover:border-fuchsia-400/50 hover:bg-violet-500/5 transition"
-          >
+          <div onClick={() => fileRef.current?.click()} className="border-2 border-dashed border-violet-400/30 rounded-xl p-8 text-center cursor-pointer hover:border-fuchsia-400/50 hover:bg-violet-500/5 transition">
             <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={onFileSelected} />
             {aiFile ? (
               <div className="text-sm text-violet-100">
@@ -288,9 +265,7 @@ export function Contracts() {
               </div>
             )}
           </div>
-          {aiImageUrl && (
-            <img src={aiImageUrl} alt="Preview" className="max-h-48 rounded-xl border border-violet-400/20 mx-auto" />
-          )}
+          {aiImageUrl && <img src={aiImageUrl} alt="Preview" className="max-h-48 rounded-xl border border-violet-400/20 mx-auto" />}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={() => { setAiOpen(false); setAiFile(null); setAiImageUrl(null) }}>Cancelar</Button>
             <Button variant="gold" onClick={aiAnalyzeAndCreate} disabled={aiBusy || !aiFile}>
@@ -318,8 +293,6 @@ function ContractCard({ contract: c, onClick }: { contract: any; onClick: () => 
           <div><span className="text-violet-300/70">Capital req.:</span> <span className="text-violet-200">{formatCurrency(c.capital_required)}</span></div>
           <div><span className="text-violet-300/70">Ganancia est.:</span> <span className="text-teal-300">{formatCurrency(c.estimated_profit)}</span></div>
           <div><span className="text-violet-300/70">Cierre:</span> <span className="text-violet-200">{formatDate(c.due_date)}</span></div>
-          <div><span className="text-violet-300/70">Entrega:</span> <span className="text-violet-200">{formatDate(c.delivery_date)}</span></div>
-          <div><span className="text-violet-300/70">Pago:</span> <span className="text-violet-200">{formatDate(c.payment_date)}</span></div>
         </div>
         {(c.health_score || 0) > 0 && (
           <div className="flex items-center gap-2 mt-3 pt-3 border-t border-violet-400/10">
@@ -329,52 +302,6 @@ function ContractCard({ contract: c, onClick }: { contract: any; onClick: () => 
           </div>
         )}
       </div>
-    </Card>
-  )
-}
-
-function ContractTable({ contracts, onClick }: { contracts: any[]; onClick: (id: string) => void }) {
-  return (
-    <Card className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-violet-400/15 text-left text-xs text-violet-300/70">
-            <th className="px-4 py-3 font-medium">Nombre</th>
-            <th className="px-4 py-3 font-medium">Agencia</th>
-            <th className="px-4 py-3 font-medium">Estado</th>
-            <th className="px-4 py-3 font-medium">Valor</th>
-            <th className="px-4 py-3 font-medium">Capital req.</th>
-            <th className="px-4 py-3 font-medium">Ganancia est.</th>
-            <th className="px-4 py-3 font-medium">Cierre</th>
-            <th className="px-4 py-3 font-medium">Entrega</th>
-            <th className="px-4 py-3 font-medium">Pago</th>
-            <th className="px-4 py-3 font-medium">Health</th>
-          </tr>
-        </thead>
-        <tbody>
-          {contracts.map((c) => {
-            const health = healthColor(c.health_score || 0)
-            return (
-              <tr key={c.id} onClick={() => onClick(c.id)} className="border-b border-violet-400/10 hover:bg-violet-500/5 cursor-pointer transition">
-                <td className="px-4 py-3 text-violet-100 font-medium">{c.title}</td>
-                <td className="px-4 py-3 text-violet-300/70">{c.agency || '—'}</td>
-                <td className="px-4 py-3"><Badge tone={STATUS_TONE[c.status]}>{STATUS_LABEL[c.status] || c.status}</Badge></td>
-                <td className="px-4 py-3 text-violet-100">{formatCurrency(c.total_value)}</td>
-                <td className="px-4 py-3 text-violet-200">{formatCurrency(c.capital_required)}</td>
-                <td className="px-4 py-3 text-teal-300">{formatCurrency(c.estimated_profit)}</td>
-                <td className="px-4 py-3 text-violet-300/70">{formatDate(c.due_date)}</td>
-                <td className="px-4 py-3 text-violet-300/70">{formatDate(c.delivery_date)}</td>
-                <td className="px-4 py-3 text-violet-300/70">{formatDate(c.payment_date)}</td>
-                <td className="px-4 py-3">
-                  {(c.health_score || 0) > 0 ? (
-                    <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full', health.bg, health.color)}>{c.health_score}</span>
-                  ) : <span className="text-violet-400/50">—</span>}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
     </Card>
   )
 }

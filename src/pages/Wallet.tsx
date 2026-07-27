@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Card, Button, Input, Select, Textarea, Badge, Modal, SectionTitle, EmptyState } from '../components/ui'
-import { Plus, Download, TrendingUp, Wallet as WalletIcon, ArrowUpRight, ArrowDownRight, Landmark, CreditCard, Package, AlertTriangle, Clock, Sparkles, Loader2, Link2 } from 'lucide-react'
+import { Plus, Download, TrendingUp, Wallet as WalletIcon, ArrowUpRight, ArrowDownRight, Landmark, CreditCard, Package, TriangleAlert as AlertTriangle, Clock, Sparkles, Loader as Loader2, Link2 } from 'lucide-react'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts'
 
@@ -67,57 +67,38 @@ export function Wallet() {
     }
   }
 
-  // Financial calculations
   const availableCapital = capitalSources.reduce((s, c) => s + (c.available_amount || 0), 0)
-  const projectedProfit = contracts.reduce((s, c) => s + (c.estimated_profit || (c.fixed_profit || (c.total_value * (c.profit_pct || 0) / 100) || 0)), 0)
+  const projectedProfit = contracts.reduce((s, c) => s + (c.estimated_profit || 0), 0)
   const receivedProfit = tx.filter((t) => t.amount > 0 && t.type === 'income').reduce((s, t) => s + t.amount, 0)
   const receivable = invoices.filter((i) => i.status !== 'paid').reduce((s, i) => s + (i.amount || 0), 0)
   const payable = tx.filter((t) => t.amount < 0 && t.status !== 'paid').reduce((s, t) => s + Math.abs(t.amount), 0)
   const totalContractValue = contracts.reduce((s, c) => s + (c.total_value || 0), 0)
 
   const kpis = [
-    { label: 'Capital Disponible', value: formatCurrency(availableCapital), icon: WalletIcon, tone: 'gold' },
-    { label: 'Ganancia Proyectada', value: formatCurrency(projectedProfit), icon: TrendingUp, tone: 'success' },
-    { label: 'Ganancia Recibida', value: formatCurrency(receivedProfit), icon: ArrowDownRight, tone: 'info' },
-    { label: 'Por Cobrar', value: formatCurrency(receivable), icon: Clock, tone: 'warning' },
-    { label: 'Por Pagar', value: formatCurrency(payable), icon: CreditCard, tone: 'error' },
-    { label: 'Valor Total Contratos', value: formatCurrency(totalContractValue), icon: Package, tone: 'neutral' },
+    { label: 'Capital Disponible', value: formatCurrency(availableCapital), icon: WalletIcon, tone: 'gold' as const },
+    { label: 'Ganancia Proyectada', value: formatCurrency(projectedProfit), icon: TrendingUp, tone: 'success' as const },
+    { label: 'Ganancia Recibida', value: formatCurrency(receivedProfit), icon: ArrowDownRight, tone: 'info' as const },
+    { label: 'Por Cobrar', value: formatCurrency(receivable), icon: Clock, tone: 'warning' as const },
+    { label: 'Por Pagar', value: formatCurrency(payable), icon: CreditCard, tone: 'error' as const },
+    { label: 'Valor Total Contratos', value: formatCurrency(totalContractValue), icon: Package, tone: 'neutral' as const },
   ]
 
-  // Alerts
   const alerts: { type: string; msg: string; tone: any }[] = []
   contracts.filter((c) => c.status === 'ganado' || c.status === 'ejecucion').forEach((c) => {
-    if ((c.capital_required || 0) > availableCapital) {
-      alerts.push({ type: 'capital', msg: `${c.title} necesita ${formatCurrency(c.capital_required)} en capital`, tone: 'warning' })
-    }
-    if ((c.estimated_profit || 0) / (c.total_value || 1) < 0.1 && c.total_value > 0) {
-      alerts.push({ type: 'profit', msg: `${c.title} tiene baja rentabilidad`, tone: 'error' })
-    }
+    if ((c.capital_required || 0) > availableCapital) alerts.push({ type: 'capital', msg: `${c.title} necesita ${formatCurrency(c.capital_required)} en capital`, tone: 'warning' })
+    if ((c.estimated_profit || 0) / (c.total_value || 1) < 0.1 && c.total_value > 0) alerts.push({ type: 'profit', msg: `${c.title} tiene baja rentabilidad`, tone: 'error' })
   })
   invoices.filter((i) => i.status !== 'paid' && i.due_date && new Date(i.due_date) < new Date()).forEach((i) => {
     alerts.push({ type: 'overdue', msg: `Factura ${i.invoice_number} vencida`, tone: 'error' })
   })
-  contracts.filter((c) => c.payment_date && new Date(c.payment_date) <= new Date(Date.now() + 14 * 86400000) && c.status !== 'pagado').forEach((c) => {
-    alerts.push({ type: 'payment', msg: `Pago próximo: ${c.title} (${formatDate(c.payment_date)})`, tone: 'info' })
-  })
 
-  // Chart data
   const monthlyData = (() => {
     const months: Record<string, number> = {}
-    tx.forEach((t) => {
-      if (t.date) {
-        const m = t.date.slice(0, 7)
-        months[m] = (months[m] || 0) + (t.amount || 0)
-      }
-    })
+    tx.forEach((t) => { if (t.date) { const m = t.date.slice(0, 7); months[m] = (months[m] || 0) + (t.amount || 0) } })
     return Object.entries(months).sort().map(([name, value]) => ({ name: name.slice(5), value }))
   })()
-
   const byContract = contracts.slice(0, 8).map((c) => ({ name: c.title?.slice(0, 12) || 'N/A', value: c.total_value || 0 }))
-  const capByType = Object.entries(capitalSources.reduce((acc, c) => {
-    acc[c.type] = (acc[c.type] || 0) + (c.available_amount || 0)
-    return acc
-  }, {} as Record<string, number>)).map(([name, value]) => ({ name, value }))
+  const capByType = Object.entries(capitalSources.reduce((acc, c) => { acc[c.type] = (acc[c.type] || 0) + (c.available_amount || 0); return acc }, {} as Record<string, number>)).map(([name, value]) => ({ name, value }))
 
   const tabs = [
     { id: 'summary', label: 'Resumen' },
@@ -129,7 +110,7 @@ export function Wallet() {
   ] as const
 
   function exportCsv() {
-    const rows = [['Fecha','Tipo','Descripción','Monto','Estado','Categoría','Cliente/Proveedor','Método de pago','Notas'], ...tx.map((t) => [t.date, t.type, t.description, t.amount, t.status, t.category, t.client_supplier, t.payment_method, t.notes])]
+    const rows = [['Fecha','Tipo','Descripción','Monto','Estado','Categoría'], ...tx.map((t) => [t.date, t.type, t.description, t.amount, t.status, t.category])]
     const csv = rows.map((r) => r.map((c) => `"${c || ''}"`).join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
@@ -138,6 +119,11 @@ export function Wallet() {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="font-display text-2xl font-bold text-violet-100">Wallet</h1>
+        <p className="text-sm text-violet-300/70 mt-1">Resumen financiero de tu operación</p>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-1 bg-violet-950/50 border border-violet-400/20 rounded-xl p-1 overflow-x-auto no-scrollbar">
           {tabs.map((t) => (
@@ -151,7 +137,6 @@ export function Wallet() {
         </div>
       </div>
 
-      {/* Summary tab */}
       {tab === 'summary' && (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -164,7 +149,7 @@ export function Wallet() {
                     <Icon size={16} className="text-fuchsia-400" />
                   </div>
                   <div className="font-display text-xl font-bold text-violet-100 mt-2">{k.value}</div>
-                  <div className="mt-2"><Badge tone={k.tone as any}>•</Badge></div>
+                  <div className="mt-2"><Badge tone={k.tone}>•</Badge></div>
                 </Card>
               )
             })}
@@ -207,7 +192,6 @@ export function Wallet() {
         </>
       )}
 
-      {/* Contracts tab */}
       {tab === 'contracts' && (
         <Card className="p-6">
           <SectionTitle title="Contratos" subtitle="Resumen financiero de cada contrato" />
@@ -215,15 +199,10 @@ export function Wallet() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-violet-400/15 text-left text-xs text-violet-300/70">
-                  <th className="px-3 py-2 font-medium">Nombre</th>
-                  <th className="px-3 py-2 font-medium">Agencia</th>
-                  <th className="px-3 py-2 font-medium">Valor</th>
-                  <th className="px-3 py-2 font-medium">Capital req.</th>
-                  <th className="px-3 py-2 font-medium">Costo</th>
-                  <th className="px-3 py-2 font-medium">Ganancia</th>
-                  <th className="px-3 py-2 font-medium">Estado</th>
-                  <th className="px-3 py-2 font-medium">Entrega</th>
-                  <th className="px-3 py-2 font-medium">Pago est.</th>
+                  <th className="px-3 py-2 font-medium">Nombre</th><th className="px-3 py-2 font-medium">Agencia</th>
+                  <th className="px-3 py-2 font-medium">Valor</th><th className="px-3 py-2 font-medium">Capital req.</th>
+                  <th className="px-3 py-2 font-medium">Costo</th><th className="px-3 py-2 font-medium">Ganancia</th>
+                  <th className="px-3 py-2 font-medium">Estado</th><th className="px-3 py-2 font-medium">Entrega</th><th className="px-3 py-2 font-medium">Pago est.</th>
                 </tr>
               </thead>
               <tbody>
@@ -246,7 +225,6 @@ export function Wallet() {
         </Card>
       )}
 
-      {/* Invoices tab */}
       {tab === 'invoices' && (
         <Card className="p-6">
           <SectionTitle title="Facturas" subtitle="Lista de facturas por contrato" />
@@ -257,11 +235,8 @@ export function Wallet() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-violet-400/15 text-left text-xs text-violet-300/70">
-                    <th className="px-3 py-2 font-medium">Número</th>
-                    <th className="px-3 py-2 font-medium">Contrato</th>
-                    <th className="px-3 py-2 font-medium">Monto</th>
-                    <th className="px-3 py-2 font-medium">Vencimiento</th>
-                    <th className="px-3 py-2 font-medium">Estado</th>
+                    <th className="px-3 py-2 font-medium">Número</th><th className="px-3 py-2 font-medium">Contrato</th>
+                    <th className="px-3 py-2 font-medium">Monto</th><th className="px-3 py-2 font-medium">Vencimiento</th><th className="px-3 py-2 font-medium">Estado</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -281,7 +256,6 @@ export function Wallet() {
         </Card>
       )}
 
-      {/* Capital tab */}
       {tab === 'capital' && (
         <>
           <div className="flex justify-end gap-2">
@@ -290,7 +264,7 @@ export function Wallet() {
           </div>
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
             {capitalSources.length === 0 ? (
-              <Card className="col-span-full"><EmptyState icon={<Landmark size={22} />} title="Sin fuentes de capital" subtitle="Agrega capital propio, líneas de crédito, inversionistas o financiamiento. También puedes pegar un link y la AI lo creará." action={<Button variant="gold" onClick={() => setCapOpen(true)}><Plus size={16} /> Agregar</Button>} /></Card>
+              <Card className="col-span-full"><EmptyState icon={<Landmark size={22} />} title="Sin fuentes de capital" subtitle="Agrega capital propio, líneas de crédito, inversionistas o financiamiento." action={<Button variant="gold" onClick={() => setCapOpen(true)}><Plus size={16} /> Agregar</Button>} /></Card>
             ) : capitalSources.map((c) => (
               <Card key={c.id} hover className="p-5">
                 <div className="flex items-start justify-between">
@@ -305,17 +279,13 @@ export function Wallet() {
                 <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
                   <div><span className="text-violet-300/70">Disponible:</span> <span className="font-semibold text-violet-100">{formatCurrency(c.available_amount)}</span></div>
                   <div><span className="text-violet-300/70">Máximo:</span> <span className="text-violet-200">{formatCurrency(c.max_amount)}</span></div>
-                  <div><span className="text-violet-300/70">Interés:</span> <span className="text-violet-200">{c.interest_rate || '—'}</span></div>
-                  <div><span className="text-violet-300/70">Plazo:</span> <span className="text-violet-200">{c.term || '—'}</span></div>
                 </div>
-                {c.notes && <p className="text-xs text-violet-300/70 mt-3 line-clamp-2">{c.notes}</p>}
               </Card>
             ))}
           </div>
         </>
       )}
 
-      {/* Reports tab */}
       {tab === 'reports' && (
         <div className="space-y-6">
           <div className="grid lg:grid-cols-2 gap-6">
@@ -346,29 +316,14 @@ export function Wallet() {
               )}
             </Card>
           </div>
-          <Card className="p-6">
-            <SectionTitle title="Distribución de Capital" />
-            {capByType.length === 0 ? <p className="text-sm text-violet-300/70 py-8 text-center">Sin datos aún</p> : (
-              <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Pie data={capByType} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50}>
-                    {capByType.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: 12, border: '1px solid rgba(168,85,247,0.3)', background: '#1a0b2e', color: '#f5f3ff' }} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </Card>
         </div>
       )}
 
-      {/* Alerts tab */}
       {tab === 'alerts' && (
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4"><AlertTriangle size={20} className="text-amber-400" /><h3 className="font-semibold text-violet-100">Alertas Inteligentes</h3></div>
           {alerts.length === 0 ? (
-            <EmptyState icon={<AlertTriangle size={22} />} title="Sin alertas" subtitle="Todo está bajo control. La AI te avisará cuando algo necesite atención." />
+            <EmptyState icon={<AlertTriangle size={22} />} title="Sin alertas" subtitle="Todo está bajo control." />
           ) : (
             <div className="space-y-3">
               {alerts.map((a, i) => (
@@ -382,22 +337,18 @@ export function Wallet() {
         </Card>
       )}
 
-      {/* Transaction modal */}
       <Modal open={open} onClose={() => setOpen(false)} title="Nueva transacción" wide>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Select label="Tipo" value={draft.type} onChange={(e) => setDraft((d:any) => ({ ...d, type: e.target.value }))}>
-              <option value="income">Ingreso</option>
-              <option value="expense">Gasto</option>
-              <option value="investment">Inversión</option>
-              <option value="payment">Pago</option>
+              <option value="income">Ingreso</option><option value="expense">Gasto</option>
+              <option value="investment">Inversión</option><option value="payment">Pago</option>
             </Select>
-            <Input label="Categoría" value={draft.category} onChange={(e) => setDraft((d:any) => ({ ...d, category: e.target.value }))} placeholder="Ej. Materiales" />
+            <Input label="Categoría" value={draft.category} onChange={(e) => setDraft((d:any) => ({ ...d, category: e.target.value }))} />
             <Input label="Descripción" value={draft.description} onChange={(e) => setDraft((d:any) => ({ ...d, description: e.target.value }))} />
             <Input label="Monto" type="number" value={draft.amount || ''} onChange={(e) => setDraft((d:any) => ({ ...d, amount: +e.target.value }))} />
             <Input label="Fecha" type="date" value={draft.date} onChange={(e) => setDraft((d:any) => ({ ...d, date: e.target.value }))} />
             <Input label="Cliente/Proveedor" value={draft.client_supplier} onChange={(e) => setDraft((d:any) => ({ ...d, client_supplier: e.target.value }))} />
-            <Input label="Método de pago" value={draft.payment_method} onChange={(e) => setDraft((d:any) => ({ ...d, payment_method: e.target.value }))} placeholder="ACH, Check, Wire" />
           </div>
           <Textarea label="Notas" value={draft.notes} onChange={(e) => setDraft((d:any) => ({ ...d, notes: e.target.value }))} />
           <div className="flex justify-end gap-2 pt-2">
@@ -407,25 +358,18 @@ export function Wallet() {
         </div>
       </Modal>
 
-      {/* Capital source modal */}
       <Modal open={capOpen} onClose={() => setCapOpen(false)} title="Nueva fuente de capital" wide>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input label="Nombre" value={capDraft.name} onChange={(e) => setCapDraft((d:any) => ({ ...d, name: e.target.value }))} />
             <Select label="Tipo" value={capDraft.type} onChange={(e) => setCapDraft((d:any) => ({ ...d, type: e.target.value }))}>
-              <option value="own">Capital propio</option>
-              <option value="credit_line">Línea de crédito</option>
-              <option value="investor">Inversionista</option>
-              <option value="financing">Financiamiento</option>
+              <option value="own">Capital propio</option><option value="credit_line">Línea de crédito</option>
+              <option value="investor">Inversionista</option><option value="financing">Financiamiento</option>
             </Select>
             <Input label="Monto disponible ($)" type="number" value={capDraft.available_amount || ''} onChange={(e) => setCapDraft((d:any) => ({ ...d, available_amount: +e.target.value }))} />
             <Input label="Monto máximo ($)" type="number" value={capDraft.max_amount || ''} onChange={(e) => setCapDraft((d:any) => ({ ...d, max_amount: +e.target.value }))} />
-            <Input label="Tasa de interés" value={capDraft.interest_rate} onChange={(e) => setCapDraft((d:any) => ({ ...d, interest_rate: e.target.value }))} placeholder="Ej. 5%" />
-            <Input label="Plazo" value={capDraft.term} onChange={(e) => setCapDraft((d:any) => ({ ...d, term: e.target.value }))} placeholder="Ej. 12 meses" />
-            <Input label="Contacto" value={capDraft.contact} onChange={(e) => setCapDraft((d:any) => ({ ...d, contact: e.target.value }))} />
-            <Input label="Email" value={capDraft.email} onChange={(e) => setCapDraft((d:any) => ({ ...d, email: e.target.value }))} />
-            <Input label="Teléfono" value={capDraft.phone} onChange={(e) => setCapDraft((d:any) => ({ ...d, phone: e.target.value }))} />
-            <Input label="URL de origen" value={capDraft.source_url} onChange={(e) => setCapDraft((d:any) => ({ ...d, source_url: e.target.value }))} placeholder="https://…" />
+            <Input label="Tasa de interés" value={capDraft.interest_rate} onChange={(e) => setCapDraft((d:any) => ({ ...d, interest_rate: e.target.value }))} />
+            <Input label="Plazo" value={capDraft.term} onChange={(e) => setCapDraft((d:any) => ({ ...d, term: e.target.value }))} />
           </div>
           <Textarea label="Notas" value={capDraft.notes} onChange={(e) => setCapDraft((d:any) => ({ ...d, notes: e.target.value }))} />
           <div className="flex justify-end gap-2 pt-2">
@@ -435,10 +379,9 @@ export function Wallet() {
         </div>
       </Modal>
 
-      {/* AI capital modal */}
       <Modal open={aiCapOpen} onClose={() => setAiCapOpen(false)} title="Crear fuente de capital con AI">
         <div className="space-y-4">
-          <p className="text-sm text-violet-300/70">Pega el enlace de la fuente de capital (empresa o persona) y la AI extraerá la información automáticamente.</p>
+          <p className="text-sm text-violet-300/70">Pega el enlace de la fuente de capital y la AI extraerá la información.</p>
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-950/50 border border-violet-400/20">
             <Link2 size={15} className="text-fuchsia-400" />
             <input value={aiUrl} onChange={(e) => setAiUrl(e.target.value)} placeholder="https://…" className="flex-1 bg-transparent outline-none text-sm text-violet-50 placeholder:text-violet-400/40" />
