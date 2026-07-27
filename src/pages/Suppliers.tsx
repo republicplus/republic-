@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle } from '../components/ui'
-import { Plus, Search, Trash2, Pencil, Star, Store, Sparkles, Loader2, Link2, ExternalLink, Filter, CheckCircle2 } from 'lucide-react'
+import { Plus, Search, Trash2, Pencil, Star, Store, Sparkles, Loader as Loader2, Link2, ExternalLink, Filter, CircleCheck as CheckCircle2 } from 'lucide-react'
 import { cn, formatDate } from '../lib/utils'
 
 const SUPPLIER_TYPES = [
-  'Mayorista General', 'Electrónicos', 'Construcción', 'Herramientas', 'Oficina',
-  'Tecnología', 'Seguridad', 'Industrial', 'Alimentos', 'Ropa / Textiles',
-  'Mobiliario', 'Médico / Salud', 'Automotriz', 'Empaque', 'Limpieza', 'Otros',
+  'Comida', 'Restaurantes', 'Oficina', 'Limpieza', 'Industrial', 'Construcción',
+  'Tecnología', 'Electrónica', 'Impresión', 'Empaque', 'Banderas', 'Defensa',
+  'Contratación Pública', 'Otros',
 ]
 const NET_TERMS = [0, 15, 30, 60, 90]
 const STATUSES = ['activo', 'pendiente', 'inactivo']

@@ -3,11 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Card, Badge, Button, SectionTitle } from '../components/ui'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
-import {
-  Wallet as WalletIcon, TrendingUp, ArrowDownRight, Clock, CreditCard,
-  Package, FileText, Sparkles, Send, Plus, MessageSquare, Trash2,
-  Upload, Loader2, Paperclip,
-} from 'lucide-react'
+import { Wallet as WalletIcon, TrendingUp, ArrowDownRight, Clock, CreditCard, Package, FileText, Sparkles, Send, Plus, MessageSquare, Trash2, Upload, Loader as Loader2, Paperclip } from 'lucide-react'
 
 type Msg = { id: string; role: 'user' | 'assistant'; content: string }
 type Chat = { id: string; title: string; updated_at: string }
@@ -56,9 +52,10 @@ export function Dashboard() {
     if (data) setMessages(data.map((m: any) => ({ id: m.id, role: m.role, content: m.content })))
   }
 
-  async function newChat() {
+  async function newChat(): Promise<string | null> {
     const { data } = await supabase.from('ai_chats').insert({ title: 'Nueva consulta' }).select().single()
-    if (data) { setChats((c) => [data as Chat, ...c]); setChatId(data.id); setMessages([]) }
+    if (data) { setChats((c) => [data as Chat, ...c]); setChatId(data.id); setMessages([]); return data.id }
+    return null
   }
 
   async function ask(question: string) {
@@ -81,7 +78,8 @@ export function Dashboard() {
 
     const q = question.trim() || 'Analiza este documento y dame un resumen completo.'
 
-    if (!chatId) { await newChat() }
+    let activeChatId = chatId
+    if (!activeChatId) { activeChatId = await newChat() }
 
     const userMsg: Msg = { id: crypto.randomUUID(), role: 'user', content: q + (attachedFile ? ` \n📎 ${attachedFile.name}` : '') }
     setMessages((m) => [...m, userMsg])
@@ -102,12 +100,12 @@ export function Dashboard() {
       const aiMsg: Msg = { id: crypto.randomUUID(), role: 'assistant', content: answer }
       setMessages((m) => [...m, aiMsg])
 
-      if (chatId) {
+      if (activeChatId) {
         await supabase.from('ai_messages').insert([
-          { chat_id: chatId, role: 'user', content: q },
-          { chat_id: chatId, role: 'assistant', content: answer },
+          { chat_id: activeChatId, role: 'user', content: q },
+          { chat_id: activeChatId, role: 'assistant', content: answer },
         ])
-        await supabase.from('ai_chats').update({ title: q.slice(0, 50), updated_at: new Date().toISOString() }).eq('id', chatId)
+        await supabase.from('ai_chats').update({ title: q.slice(0, 50), updated_at: new Date().toISOString() }).eq('id', activeChatId)
         loadChats()
       }
     } catch (err: any) {
@@ -202,6 +200,21 @@ export function Dashboard() {
                   </div>
                   <h3 className="font-display text-lg font-semibold text-violet-100">Orbe AI</h3>
                   <p className="text-sm text-violet-300/70 mt-1 max-w-sm">Pregúntame sobre tus contratos, sube un PDF o imagen para analizar, o pídame recomendaciones.</p>
+                  <div className="mt-5 w-full max-w-sm space-y-2">
+                    {[
+                      '¿Dónde obtengo mi código NAICS?',
+                      '¿Cómo registro mi empresa para contratos del gobierno?',
+                      '¿Qué documentos necesito para licitaciones públicas?',
+                    ].map((q) => (
+                      <button
+                        key={q}
+                        onClick={() => ask(q)}
+                        className="w-full text-left px-4 py-3 rounded-xl border border-violet-400/20 bg-violet-950/40 text-sm text-violet-200 hover:border-fuchsia-400/40 hover:text-fuchsia-200 transition"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
               {messages.map((m) => (
