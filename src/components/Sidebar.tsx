@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import {
   LayoutDashboard, FileText, Store, Wallet, Sparkles, LogOut,
-  Target, Users, Landmark, Building2, ShieldCheck, Globe, FileSearch, Crown, Wrench,
+  Layers, Users, Building2, ShieldCheck, Globe, FileSearch, Crown, Wrench,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 
@@ -14,7 +14,7 @@ const NAV_SECTIONS: { label: string; items: { to: string; label: string; icon: a
       { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
       { to: '/app/contracts', label: 'Contratos', icon: FileText },
       { to: '/app/flow', label: 'Contract Flow', icon: FileSearch },
-      { to: '/app/opportunities', label: 'Oportunidades', icon: Target },
+      { to: '/app/pool-opportunities', label: 'Pool Opportunities', icon: Layers },
     ],
   },
   {
@@ -30,7 +30,6 @@ const NAV_SECTIONS: { label: string; items: { to: string; label: string; icon: a
     items: [
       { to: '/app/wallet', label: 'Wallet', icon: Wallet },
       { to: '/app/investors', label: 'Inversionistas', icon: Users },
-      { to: '/app/pools', label: 'Pools', icon: Landmark },
       { to: '/app/insurers', label: 'Aseguradoras', icon: ShieldCheck },
     ],
   },

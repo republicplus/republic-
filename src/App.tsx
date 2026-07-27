@@ -9,10 +9,9 @@ import { Sidebar } from './components/Sidebar'
 import { PrivateBidding } from './pages/PrivateBidding'
 import { BidPages } from './pages/BidPages'
 import { ContractFlow } from './pages/ContractFlow'
-import { Opportunities } from './pages/Opportunities'
+import { PoolOpportunities } from './pages/PoolOpportunities'
 import { Company } from './pages/Company'
 import { Investors } from './pages/Investors'
-import { Pools } from './pages/Pools'
 import { Insurers } from './pages/Insurers'
 import { Tools } from './pages/Tools'
 import { Documents } from './pages/Documents'
@@ -30,13 +29,12 @@ function Shell() {
           <Route path="/app" element={<Dashboard />} />
           <Route path="/app/contracts/*" element={<Contracts />} />
           <Route path="/app/flow" element={<ContractFlow />} />
-          <Route path="/app/opportunities" element={<Opportunities />} />
+          <Route path="/app/pool-opportunities" element={<PoolOpportunities />} />
           <Route path="/app/suppliers" element={<Suppliers />} />
           <Route path="/app/bid-pages" element={<BidPages />} />
           <Route path="/app/private-bidding" element={<PrivateBidding />} />
           <Route path="/app/wallet" element={<Wallet />} />
           <Route path="/app/investors" element={<Investors />} />
-          <Route path="/app/pools" element={<Pools />} />
           <Route path="/app/insurers" element={<Insurers />} />
           <Route path="/app/company" element={<Company />} />
           <Route path="/app/tools" element={<Tools />} />
