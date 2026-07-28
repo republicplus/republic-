@@ -46,7 +46,7 @@ const NAV_SECTIONS: { label: string; items: { to: string; label: string; icon: a
 
 export function Sidebar() {
   const nav = useNavigate()
-  const { session } = useAuth()
+  const { session, isAdmin, signOut } = useAuth()
 
   return (
     <aside className="w-60 shrink-0 border-r border-violet-400/15 bg-[#0e0720] flex flex-col h-screen sticky top-0">
@@ -92,9 +92,11 @@ export function Sidebar() {
       </nav>
 
       <div className="px-3 py-3 border-t border-violet-400/15">
-        <div className="px-3 py-1.5 text-xs text-violet-300/50 truncate">{session?.user?.email}</div>
+        <div className="px-3 py-1.5 text-xs text-violet-300/50 truncate">
+          {session?.user?.email || (isAdmin ? 'Admin' : '')}
+        </div>
         <button
-          onClick={async () => { await supabase.auth.signOut(); nav('/') }}
+          onClick={async () => { await signOut(); nav('/') }}
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-violet-300/70 hover:text-rose-300 hover:bg-rose-500/5 transition w-full"
         >
           <LogOut size={16} /> Cerrar sesión

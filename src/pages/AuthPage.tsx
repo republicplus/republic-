@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../lib/auth'
 import { Sparkles, ShieldCheck, Loader as Loader2, Phone } from 'lucide-react'
 import { Button, Input } from '../components/ui'
 
@@ -8,6 +9,7 @@ const ADMIN_CODE = 'ARCABID2025'
 
 export function AuthPage() {
   const navigate = useNavigate()
+  const { setAdmin } = useAuth()
   const [mode, setMode] = useState<'signin' | 'signup'>('signup')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -45,7 +47,7 @@ export function AuthPage() {
     setGoogleBusy(true); setError(null)
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin + '/dashboard' },
+      options: { redirectTo: window.location.origin + '/app' },
     })
     if (error) { setError(error.message); setGoogleBusy(false) }
   }
@@ -53,8 +55,8 @@ export function AuthPage() {
   function verifyAdmin() {
     setAdminError(null)
     if (adminCode.trim() === ADMIN_CODE) {
-      localStorage.setItem('arcabid_admin', '1')
-      navigate('/app')
+      setAdmin(true)
+      window.location.href = '/app'
     } else {
       setAdminError('Código incorrecto. Intenta de nuevo.')
     }
