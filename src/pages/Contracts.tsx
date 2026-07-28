@@ -20,6 +20,7 @@ const STATUS_TONE: Record<string,any> = {
 }
 const PRIORITIES = ['alta', 'media', 'baja']
 const CONTRACT_TYPES = ['Producto', 'Servicio', 'Construcción', 'Mixto']
+const PAYMENT_TERMS = ['Net 15', 'Net 30', 'Net 45', 'Net 60', 'Net 90', 'Prepay', 'Milestone', 'Custom']
 
 function healthColor(score: number) {
   if (score >= 90) return { color: 'text-teal-400', bg: 'bg-teal-500/10', label: 'Excelente' }
@@ -170,6 +171,7 @@ export function Contracts() {
                 <th className="px-4 py-3 font-medium">Cierre</th>
                 <th className="px-4 py-3 font-medium">Entrega</th>
                 <th className="px-4 py-3 font-medium">Pago</th>
+                <th className="px-4 py-3 font-medium">Terms</th>
                 <th className="px-4 py-3 font-medium">Health</th>
               </tr>
             </thead>
@@ -187,6 +189,7 @@ export function Contracts() {
                     <td className="px-4 py-3 text-violet-300/70">{formatDate(c.due_date)}</td>
                     <td className="px-4 py-3 text-violet-300/70">{formatDate(c.delivery_date)}</td>
                     <td className="px-4 py-3 text-violet-300/70">{formatDate(c.payment_date)}</td>
+                    <td className="px-4 py-3">{c.payment_terms ? <Badge tone="info">{c.payment_terms}</Badge> : <span className="text-violet-400/50">—</span>}</td>
                     <td className="px-4 py-3">
                       {(c.health_score || 0) > 0 ? (
                         <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full', health.bg, health.color)}>{c.health_score}</span>
@@ -232,6 +235,10 @@ export function Contracts() {
             <Input label="Capital requerido ($)" type="number" value={draft.capital_required || ''} onChange={(e) => set('capital_required', +e.target.value)} />
             <Input label="Costo estimado ($)" type="number" value={draft.estimated_cost || ''} onChange={(e) => set('estimated_cost', +e.target.value)} />
             <Input label="Ganancia estimada ($)" type="number" value={draft.estimated_profit || ''} onChange={(e) => set('estimated_profit', +e.target.value)} />
+            <Select label="Términos de pago" value={draft.payment_terms || ''} onChange={(e) => set('payment_terms', e.target.value)}>
+              <option value="">Seleccionar…</option>
+              {PAYMENT_TERMS.map((p) => <option key={p} value={p}>{p}</option>)}
+            </Select>
           </div>
 
           <SectionTitle title="4. Producto o Servicio" />

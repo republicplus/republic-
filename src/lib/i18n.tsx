@@ -18,6 +18,7 @@ const en: Dict = {
   'nav.bid_pages': 'Bid Pages',
   'nav.contract_flow': 'Contract Analyzer Flow',
   'nav.contracts': 'Current Contracts',
+  'nav.pool_opportunities': 'Pool Opportunities',
   'nav.suppliers': 'Suppliers',
   'nav.wallet': 'Wallet',
   'nav.capital': 'Capital',
@@ -28,6 +29,7 @@ const en: Dict = {
   'nav.documents': 'Documents',
   'nav.risk': 'Risk Analysis',
   'nav.settings': 'Settings',
+  'nav.profile': 'My Profile',
   'nav.logout': 'Logout',
 
   // Page headings
@@ -80,6 +82,7 @@ const es: Dict = {
   'nav.bid_pages': 'Bid Pages',
   'nav.contract_flow': 'Analizador de Contratos',
   'nav.contracts': 'Contratos Actuales',
+  'nav.pool_opportunities': 'Pool de Oportunidades',
   'nav.suppliers': 'Proveedores',
   'nav.wallet': 'Wallet',
   'nav.capital': 'Capital',
@@ -90,6 +93,7 @@ const es: Dict = {
   'nav.documents': 'Documentos',
   'nav.risk': 'Análisis de Riesgo',
   'nav.settings': 'Configuración',
+  'nav.profile': 'Mi Perfil',
   'nav.logout': 'Cerrar sesión',
 
   'page.dashboard.title': 'Dashboard',

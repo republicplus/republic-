@@ -16,6 +16,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/app/bid-pages', labelKey: 'nav.bid_pages', icon: Globe },
       { to: '/app/flow', labelKey: 'nav.contract_flow', icon: FileSearch },
       { to: '/app/contracts', labelKey: 'nav.contracts', icon: FileText },
+      { to: '/app/pool-opportunities', labelKey: 'nav.pool_opportunities', icon: Layers },
     ],
   },
   {
@@ -97,8 +98,8 @@ export function Sidebar() {
               : 'text-violet-300/70 hover:text-violet-100 hover:bg-violet-500/5 border border-transparent'
           )}
         >
-          <Settings size={16} />
-          {t('nav.settings')}
+          <Crown size={16} />
+          {t('nav.profile')}
         </NavLink>
         <div className="px-3 py-1.5 text-xs text-violet-300/50 truncate">
           {session?.user?.email || (isAdmin ? 'Admin' : '')}
