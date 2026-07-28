@@ -53,7 +53,8 @@ export function AuthPage() {
   function verifyAdmin() {
     setAdminError(null)
     if (adminCode.trim() === ADMIN_CODE) {
-      navigate('/dashboard')
+      localStorage.setItem('arcabid_admin', '1')
+      navigate('/app')
     } else {
       setAdminError('Código incorrecto. Intenta de nuevo.')
     }

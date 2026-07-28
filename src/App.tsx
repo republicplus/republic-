@@ -20,13 +20,14 @@ import { Documents } from './pages/Documents'
 import { Risk } from './pages/Risk'
 
 function Shell() {
-  const { session, loading } = useAuth()
+  const { session, loading, isAdmin } = useAuth()
   if (loading) return <div className="min-h-screen flex items-center justify-center text-violet-300/70">Cargando…</div>
+  const authorized = session || isAdmin
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/auth" element={session ? <Navigate to="/app" replace /> : <AuthPage />} />
-      <Route path="/app/*" element={session ? <AppShell /> : <Navigate to="/auth" replace />} />
+      <Route path="/auth" element={authorized ? <Navigate to="/app" replace /> : <AuthPage />} />
+      <Route path="/app/*" element={authorized ? <AppShell /> : <Navigate to="/auth" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
