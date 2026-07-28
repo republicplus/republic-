@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../lib/auth'
 import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle, InfoNote } from '../components/ui'
-import { Plus, Search, Trash2, Pencil, CreditCard, Clock } from 'lucide-react'
+import { Plus, Search, Trash2, Pencil, CreditCard, Clock, Sparkles, Loader as Loader2, Link2, CircleCheck as CheckCircle2 } from 'lucide-react'
 import { cn, formatCurrency } from '../lib/utils'
 
 const PAYMENT_TERMS = ['Net 15', 'Net 30', 'Net 45', 'Net 60', 'Net 90', 'Net 120', 'Prepay', 'Custom']
@@ -17,12 +18,21 @@ type NetTermCompany = {
 }
 
 export function NetTerms() {
+  const { session } = useAuth()
   const [rows, setRows] = useState<NetTermCompany[]>([])
   const [search, setSearch] = useState('')
   const [termsFilter, setTermsFilter] = useState('all')
   const [open, setOpen] = useState(false)
+  const [aiOpen, setAiOpen] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [draft, setDraft] = useState<any>({ company_name: '', payment_terms: 'Net 30', credit_limit: 0, available_balance: 0, status: 'active' })
+  const [aiUrl, setAiUrl] = useState('')
+  const [aiBusy, setAiBusy] = useState(false)
+  const [bulkText, setBulkText] = useState('')
+  const [bulkPreview, setBulkPreview] = useState<any[]>([])
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [bulkStep, setBulkStep] = useState<'input' | 'preview'>('input')
 
   useEffect(() => { load() }, [])
 
@@ -76,6 +86,58 @@ export function NetTerms() {
   function close() {
     setOpen(false); setEditId(null)
     setDraft({ company_name: '', payment_terms: 'Net 30', credit_limit: 0, available_balance: 0, status: 'active' })
+  }
+
+  async function aiCreateFromLink() {
+    if (!aiUrl.trim()) return
+    setAiBusy(true)
+    try {
+      const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`
+      const res = await fetch(fnUrl, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ question: 'Crea una empresa de términos de pago a partir de este enlace. Extrae nombre, contacto, email, teléfono, términos de pago, límite de crédito, categoría.', mode: 'create', linkUrl: aiUrl }),
+      })
+      if (!res.ok) throw new Error('Error al crear con AI')
+      const data = await res.json()
+      if (data.record) setRows((r) => [data.record as NetTermCompany, ...r])
+      setAiOpen(false); setAiUrl('')
+    } catch (err: any) { alert('Error: ' + err.message) }
+    finally { setAiBusy(false) }
+  }
+
+  async function analyzeBulk() {
+    if (!bulkText.trim()) return
+    setBulkBusy(true)
+    try {
+      const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`
+      const res = await fetch(fnUrl, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ mode: 'bulk', bulkType: 'net_terms', bulkText }),
+      })
+      if (!res.ok) throw new Error('Error al analizar')
+      const data = await res.json()
+      const items = (data.net_terms || []).map((p: any) => ({ ...p, status: p.status || 'active' }))
+      setBulkPreview(items)
+      setBulkStep('preview')
+    } catch (err: any) { alert('Error: ' + err.message) }
+    finally { setBulkBusy(false) }
+  }
+
+  async function saveBulk() {
+    const clean = bulkPreview.map((p) => {
+      const c: any = {}
+      for (const [k, v] of Object.entries(p)) { if (v !== null && v !== undefined && v !== '') c[k] = v }
+      if (!c.status) c.status = 'active'
+      if (!c.payment_terms) c.payment_terms = 'Net 30'
+      return c
+    })
+    const { data } = await supabase.from('net_terms_companies').insert(clean).select()
+    if (data) setRows((r) => [...(data as NetTermCompany[]), ...r])
+    setBulkOpen(false); setBulkText(''); setBulkPreview([]); setBulkStep('input')
+  }
+
+  function updatePreviewItem(idx: number, field: string, value: any) {
+    setBulkPreview((p) => p.map((item, i) => i === idx ? { ...item, [field]: value } : item))
   }
 
   const filtered = rows.filter((c) => {
@@ -143,7 +205,11 @@ export function NetTerms() {
             {PAYMENT_TERMS.map((t) => <option key={t} value={t}>{t}</option>)}
           </Select>
         </div>
-        <Button variant="gold" onClick={() => { setEditId(null); setDraft({ company_name: '', payment_terms: 'Net 30', credit_limit: 0, available_balance: 0, status: 'active' }); setOpen(true) }}><Plus size={16} /> Add Company</Button>
+        <div className="flex gap-2">
+          <Button variant="primary" onClick={() => { setBulkStep('input'); setBulkText(''); setBulkPreview([]); setBulkOpen(true) }}><Sparkles size={16} /> Bulk upload with AI</Button>
+          <Button variant="secondary" onClick={() => setAiOpen(true)}><Link2 size={16} /> Create with AI</Button>
+          <Button variant="gold" onClick={() => { setEditId(null); setDraft({ company_name: '', payment_terms: 'Net 30', credit_limit: 0, available_balance: 0, status: 'active' }); setOpen(true) }}><Plus size={16} /> Add Company</Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -155,7 +221,7 @@ export function NetTerms() {
       </div>
 
       {filtered.length === 0 ? (
-        <Card><EmptyState icon={<CreditCard size={22} />} title="No companies yet" subtitle="Add companies that extend you Net 30, 60, or 90-day payment terms." action={<Button variant="gold" onClick={() => setOpen(true)}><Plus size={16} /> Add Company</Button>} /></Card>
+        <Card><EmptyState icon={<CreditCard size={22} />} title="No companies yet" subtitle="Add companies that extend you Net 30, 60, or 90-day payment terms." action={<div className="flex gap-2"><Button variant="primary" onClick={() => setBulkOpen(true)}><Sparkles size={16} /> Bulk upload with AI</Button><Button variant="gold" onClick={() => setOpen(true)}><Plus size={16} /> Add Company</Button></div>} /></Card>
       ) : (
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filtered.map((c) => (
@@ -189,6 +255,7 @@ export function NetTerms() {
         </div>
       )}
 
+      {/* Manual modal */}
       <Modal open={open} onClose={close} title={editId ? 'Edit company' : 'Add company'} wide>
         <div className="space-y-5">
           <SectionTitle title="Company info" />
@@ -225,6 +292,64 @@ export function NetTerms() {
             <Button variant="gold" onClick={save} disabled={!draft.company_name?.trim()}>{editId ? 'Save changes' : 'Add company'}</Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Single AI link modal */}
+      <Modal open={aiOpen} onClose={() => setAiOpen(false)} title="Create company with AI">
+        <div className="space-y-4">
+          <p className="text-sm text-violet-300/70">Paste the company link and the AI will extract name, contact, payment terms, credit limit and more.</p>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-950/50 border border-violet-400/20">
+            <Link2 size={15} className="text-fuchsia-400" />
+            <input value={aiUrl} onChange={(e) => setAiUrl(e.target.value)} placeholder="https://homedepotpro.com" className="flex-1 bg-transparent outline-none text-sm text-violet-50 placeholder:text-violet-400/40" />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setAiOpen(false)}>Cancel</Button>
+            <Button variant="gold" onClick={aiCreateFromLink} disabled={aiBusy || !aiUrl.trim()}>
+              {aiBusy ? <><Loader2 size={16} className="animate-spin" /> Extracting…</> : <><Sparkles size={16} /> Create with AI</>}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Bulk AI modal */}
+      <Modal open={bulkOpen} onClose={() => { setBulkOpen(false); setBulkStep('input'); setBulkText(''); setBulkPreview([]) }} title="Bulk upload companies with AI" wide>
+        {bulkStep === 'input' ? (
+          <div className="space-y-4">
+            <p className="text-sm text-violet-300/70">Paste or upload a text with a list of companies that offer payment terms. The AI will extract and organize each company automatically.</p>
+            <Textarea label="Text with companies" value={bulkText} onChange={(e) => setBulkText(e.target.value)} placeholder="Paste your list of companies here…" className="min-h-[200px]" />
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="secondary" onClick={() => { setBulkOpen(false); setBulkText('') }}>Cancel</Button>
+              <Button variant="gold" onClick={analyzeBulk} disabled={bulkBusy || !bulkText.trim()}>
+                {bulkBusy ? <><Loader2 size={16} className="animate-spin" /> Analyzing…</> : <><Sparkles size={16} /> Analyze with AI</>}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-sm text-violet-300/70">Review and edit before saving. Found <span className="text-fuchsia-300 font-semibold">{bulkPreview.length}</span> companies.</p>
+            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              {bulkPreview.map((p, i) => (
+                <Card key={i} className="p-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input label="Company name" value={p.company_name || ''} onChange={(e) => updatePreviewItem(i, 'company_name', e.target.value)} />
+                    <Input label="Contact name" value={p.contact_name || ''} onChange={(e) => updatePreviewItem(i, 'contact_name', e.target.value)} />
+                    <Input label="Email" value={p.contact_email || ''} onChange={(e) => updatePreviewItem(i, 'contact_email', e.target.value)} />
+                    <Input label="Phone" value={p.contact_phone || ''} onChange={(e) => updatePreviewItem(i, 'contact_phone', e.target.value)} />
+                    <Input label="Payment terms" value={p.payment_terms || ''} onChange={(e) => updatePreviewItem(i, 'payment_terms', e.target.value)} placeholder="Net 30" />
+                    <Input label="Credit limit" value={p.credit_limit || ''} onChange={(e) => updatePreviewItem(i, 'credit_limit', e.target.value)} />
+                    <Input label="Category" value={p.category || ''} onChange={(e) => updatePreviewItem(i, 'category', e.target.value)} />
+                    <Input label="Available" value={p.available_balance || ''} onChange={(e) => updatePreviewItem(i, 'available_balance', e.target.value)} />
+                  </div>
+                  <Textarea label="Notes" value={p.notes || ''} onChange={(e) => updatePreviewItem(i, 'notes', e.target.value)} className="mt-2" />
+                </Card>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="secondary" onClick={() => setBulkStep('input')}>Back</Button>
+              <Button variant="gold" onClick={saveBulk}><CheckCircle2 size={16} /> Save companies</Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )

@@ -20,6 +20,7 @@ Tablas y campos:
 - contracts: title, agency, solicitation_number, type, status, total_value (num), capital_required (num), estimated_profit (num), due_date (date), delivery_date (date), payment_date (date), naics, psc, notes
 - capital_sources: name, type (own|credit_line|investor|financing), available_amount (num), max_amount (num), interest_rate, term, contact, email, phone, notes, source_url
 - tools_links: name, url, description, category (bid|tool)
+- net_terms_companies: company_name, contact_name, contact_email, contact_phone, payment_terms (text like "Net 30"), credit_limit (num), available_balance (num), category (text), notes, status (active|paused|inactive)
 
 Reglas: solo JSON. Campo "table" indica la tabla. Tipos correctos.`;
 
@@ -30,6 +31,10 @@ Extrae cada proveedor como un objeto separado en el array. Si un campo no está 
 const BULK_BIDPAGES_PROMPT = `Eres ArcaBid AI. Analiza el texto del usuario y extrae TODAS las páginas web de licitaciones/bidding que encuentres.
 Devuelve ÚNICAMENTE un objeto JSON válido: { "bid_pages": [ { "name": "", "website": "", "type": "free|paid|mixed", "category": "", "contract_types": "", "country_state": "", "subscription_price": "", "notes": "", "tags": "" } ] }
 Extrae cada página como un objeto separado en el array. Si un campo no está disponible, usa string vacío.`;
+
+const BULK_NET_TERMS_PROMPT = `Eres ArcaBid AI. Analiza el texto del usuario y extrae TODAS las empresas que ofrecen términos de pago a crédito (Net 30, Net 60, Net 90, etc.).
+Devuelve ÚNICAMENTE un objeto JSON válido: { "net_terms": [ { "company_name": "", "contact_name": "", "contact_email": "", "contact_phone": "", "payment_terms": "", "credit_limit": "", "available_balance": "", "category": "", "notes": "", "status": "active" } ] }
+Extrae cada empresa como un objeto separado en el array. payment_terms debe ser un texto como "Net 30", "Net 60", "Net 90". Si un campo no está disponible, usa string vacío. status por defecto "active".`;
 
 const CONTRACT_FLOW_PROMPT = `Eres ArcaBid AI, experto en analizar contratos gubernamentales (RFQs, bids, RFPs).
 Analiza el documento o texto del contrato y extrae toda la información relevante.
@@ -181,7 +186,7 @@ async function handleCreate(supabase: any, instruction: string, apiKey: string, 
   }
 
   const { table, ...fields } = parsed;
-  const allowed = ["suppliers", "companies", "investors", "contracts", "insurers", "capital_sources", "tools_links", "bid_pages"];
+  const allowed = ["suppliers", "companies", "investors", "contracts", "insurers", "capital_sources", "tools_links", "bid_pages", "net_terms_companies"];
   if (!table || !allowed.includes(table)) {
     return new Response(JSON.stringify({ error: "Tabla no válida", table }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
@@ -225,7 +230,12 @@ async function handleBulk(bulkType: string | undefined, bulkText: string | undef
     return new Response(JSON.stringify({ error: "Falta texto o tipo de bulk" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const prompt = bulkType === "suppliers" ? BULK_SUPPLIERS_PROMPT : BULK_BIDPAGES_PROMPT;
+  const prompts: Record<string, string> = {
+    suppliers: BULK_SUPPLIERS_PROMPT,
+    bid_pages: BULK_BIDPAGES_PROMPT,
+    net_terms: BULK_NET_TERMS_PROMPT,
+  };
+  const prompt = prompts[bulkType] || BULK_SUPPLIERS_PROMPT;
   const messages = [{ role: "system", content: prompt }, { role: "user", content: bulkText }];
   const raw = await callOpenAI(apiKey, messages, 0.2, 3000, true);
 
