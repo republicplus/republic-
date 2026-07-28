@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
 import { AuthPage } from './pages/AuthPage'
+import { LandingPage } from './pages/LandingPage'
 import { Dashboard } from './pages/Dashboard'
 import { Contracts } from './pages/Contracts'
 import { Suppliers } from './pages/Suppliers'
@@ -13,6 +14,7 @@ import { PoolOpportunities } from './pages/PoolOpportunities'
 import { Company } from './pages/Company'
 import { Investors } from './pages/Investors'
 import { Insurers } from './pages/Insurers'
+import { ContractDetail } from './pages/ContractDetail'
 import { Tools } from './pages/Tools'
 import { Documents } from './pages/Documents'
 import { Risk } from './pages/Risk'
@@ -20,7 +22,17 @@ import { Risk } from './pages/Risk'
 function Shell() {
   const { session, loading } = useAuth()
   if (loading) return <div className="min-h-screen flex items-center justify-center text-violet-300/70">Cargando…</div>
-  if (!session) return <AuthPage />
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/auth" element={session ? <Navigate to="/app" replace /> : <AuthPage />} />
+      <Route path="/app/*" element={session ? <AppShell /> : <Navigate to="/auth" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
+
+function AppShell() {
   return (
     <div className="min-h-screen flex">
       <Sidebar />
@@ -28,6 +40,7 @@ function Shell() {
         <Routes>
           <Route path="/app" element={<Dashboard />} />
           <Route path="/app/contracts/*" element={<Contracts />} />
+          <Route path="/app/contracts/:id" element={<ContractDetail />} />
           <Route path="/app/flow" element={<ContractFlow />} />
           <Route path="/app/pool-opportunities" element={<PoolOpportunities />} />
           <Route path="/app/suppliers" element={<Suppliers />} />

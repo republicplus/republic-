@@ -38,3 +38,55 @@ html, body, #root {
   50% { box-shadow: 0 0 30px rgba(168, 85, 247, 0.5), 0 0 60px rgba(217, 70, 239, 0.25); }
 }
 .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fade-up 0.7s ease-out both; }
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-32px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(32px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-left { animation: slide-in-left 0.7s ease-out both; }
+.animate-slide-right { animation: slide-in-right 0.7s ease-out both; }
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.text-shimmer {
+  background: linear-gradient(90deg, #d9a82e, #f0d89a, #d9a82e, #bf8d1c, #d9a82e);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 4s linear infinite;
+}
+
+.gold-gradient-text {
+  background: linear-gradient(135deg, #f0d89a, #d9a82e, #bf8d1c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-grid-bg {
+  background-image:
+    linear-gradient(rgba(217, 168, 46, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(217, 168, 46, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(217, 168, 46, 0.12);
+}
