@@ -390,4 +390,3 @@ export function LandingPage() {
 }
 
 
-export { LandingPage }
