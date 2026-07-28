@@ -21,6 +21,7 @@ import { ContractDetail } from './pages/ContractDetail'
 import { Tools } from './pages/Tools'
 import { Documents } from './pages/Documents'
 import { Risk } from './pages/Risk'
+import { NetTerms } from './pages/NetTerms'
 
 function Shell() {
   const { session, loading, isAdmin } = useAuth()
@@ -59,6 +60,7 @@ function AppShell() {
           <Route path="tools" element={<Tools />} />
           <Route path="documents" element={<Documents />} />
           <Route path="risk" element={<Risk />} />
+          <Route path="net-terms" element={<NetTerms />} />
           <Route path="*" element={<Navigate to="/app" replace />} />
         </Routes>
       </main>

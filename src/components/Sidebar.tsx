@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { useI18n } from '../lib/i18n'
-import { LayoutDashboard, FileText, Store, Wallet, Sparkles, LogOut, Settings, Layers, Users, Building2, ShieldCheck, Globe, FileSearch, Crown, Wrench, Landmark, TriangleAlert as AlertTriangle } from 'lucide-react'
+import { LayoutDashboard, FileText, Store, Wallet, Sparkles, LogOut, Settings, Layers, Users, Building2, ShieldCheck, Globe, FileSearch, Crown, Wrench, Landmark, TriangleAlert as AlertTriangle, CreditCard } from 'lucide-react'
 import { cn } from '../lib/utils'
 
 type NavItem = { to: string; labelKey: string; icon: any; end?: boolean }
@@ -17,6 +17,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/app/flow', labelKey: 'nav.contract_flow', icon: FileSearch },
       { to: '/app/contracts', labelKey: 'nav.contracts', icon: FileText },
       { to: '/app/pool-opportunities', labelKey: 'nav.pool_opportunities', icon: Layers },
+      { to: '/app/net-terms', labelKey: 'nav.net_terms', icon: CreditCard },
     ],
   },
   {
