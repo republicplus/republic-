@@ -51,15 +51,15 @@ export function Sidebar() {
   return (
     <aside className="w-60 shrink-0 border-r border-violet-400/15 bg-[#0e0720] flex flex-col h-screen sticky top-0">
       <div className="px-5 py-5">
-        <div className="flex items-center gap-2">
+        <button onClick={() => nav('/app')} className="flex items-center gap-2 w-full hover:opacity-90 transition">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-fuchsia-500 to-violet-600 flex items-center justify-center animate-pulse-glow">
             <Sparkles size={18} className="text-white" />
           </div>
-          <div>
+          <div className="text-left">
             <div className="font-display font-bold text-violet-50">ArcaBid</div>
             <div className="text-[10px] text-violet-300/60 uppercase tracking-wider">Contracting OS</div>
           </div>
-        </div>
+        </button>
       </div>
 
       <nav className="flex-1 px-3 overflow-y-auto no-scrollbar pb-4">
