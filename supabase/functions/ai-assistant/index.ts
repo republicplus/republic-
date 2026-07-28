@@ -87,13 +87,15 @@ Deno.serve(async (req: Request) => {
     );
 
     const body = await req.json();
-    const { question, history, mode, imageUrl, fileUrl, fileType, linkUrl, bulkType, bulkText, flowType } = body as {
+    const { question, history, mode, imageUrl, fileUrl, fileType, imageUrls, pdfUrls, linkUrl, bulkType, bulkText, flowType } = body as {
       question: string;
       history?: { role: string; content: string }[];
       mode?: string;
       imageUrl?: string;
       fileUrl?: string;
       fileType?: string;
+      imageUrls?: string[];
+      pdfUrls?: string[];
       linkUrl?: string;
       bulkType?: string;
       bulkText?: string;
@@ -113,7 +115,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (mode === "analyze") {
-      return await handleAnalyze(supabase, question, apiKey, imageUrl, fileUrl, fileType);
+      return await handleAnalyze(supabase, question, apiKey, imageUrls, pdfUrls);
     }
 
     if (mode === "bulk") {
@@ -121,10 +123,10 @@ Deno.serve(async (req: Request) => {
     }
 
     if (mode === "flow") {
-      return await handleFlow(supabase, question, apiKey, imageUrl, fileUrl, fileType, flowType);
+      return await handleFlow(supabase, question, apiKey, imageUrls, pdfUrls, flowType);
     }
 
-    return await handleChat(supabase, question, history, apiKey, imageUrl, fileUrl, fileType);
+    return await handleChat(supabase, question, history, apiKey, imageUrls, pdfUrls);
   } catch (err) {
     return new Response(JSON.stringify({ error: (err as Error).message || "Error interno" }), {
       status: 500,
@@ -146,7 +148,7 @@ async function callOpenAI(apiKey: string, messages: any[], temperature = 0.3, ma
   return data.choices?.[0]?.message?.content || "";
 }
 
-async function handleChat(supabase: any, question: string, history: any, apiKey: string, imageUrl?: string, fileUrl?: string, fileType?: string) {
+async function handleChat(supabase: any, question: string, history: any, apiKey: string, imageUrls?: string[], pdfUrls?: string[]) {
   const { data: contracts } = await supabase.from("contracts").select("*").order("created_at", { ascending: false });
   const { data: suppliers } = await supabase.from("suppliers").select("name, industry, type, net_terms, states, rating, email, phone");
 
@@ -164,8 +166,8 @@ async function handleChat(supabase: any, question: string, history: any, apiKey:
     : "\n\nEl usuario aún no tiene datos registrados.";
 
   const content: any[] = [{ type: "text", text: question || "Analiza este documento." }];
-  if (imageUrl) content.push({ type: "image_url", image_url: { url: imageUrl } });
-  if (fileUrl && fileType === "pdf") content.push({ type: "file", file: { url: fileUrl } });
+  for (const url of imageUrls || []) content.push({ type: "image_url", image_url: { url } });
+  for (const url of pdfUrls || []) content.push({ type: "file", file: { url } });
 
   const messages: any[] = [
     { role: "system", content: SYSTEM_PROMPT + contextBlock },
@@ -208,10 +210,10 @@ async function handleCreate(supabase: any, instruction: string, apiKey: string, 
   return new Response(JSON.stringify({ answer: "Registro creado correctamente", record: inserted, table }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
-async function handleAnalyze(supabase: any, question: string, apiKey: string, imageUrl?: string, fileUrl?: string, fileType?: string) {
+async function handleAnalyze(supabase: any, question: string, apiKey: string, imageUrls?: string[], pdfUrls?: string[]) {
   const content: any[] = [{ type: "text", text: question || "Analiza este documento de contrato y extrae toda la información relevante." }];
-  if (imageUrl) content.push({ type: "image_url", image_url: { url: imageUrl } });
-  if (fileUrl && fileType === "pdf") content.push({ type: "file", file: { url: fileUrl } });
+  for (const url of imageUrls || []) content.push({ type: "image_url", image_url: { url } });
+  for (const url of pdfUrls || []) content.push({ type: "file", file: { url } });
 
   const messages: any[] = [
     { role: "system", content: `Eres ArcaBid AI, experto en analizar documentos de contratos gubernamentales.
@@ -252,10 +254,10 @@ async function handleBulk(bulkType: string | undefined, bulkText: string | undef
   return new Response(JSON.stringify(parsed), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
-async function handleFlow(supabase: any, question: string, apiKey: string, imageUrl?: string, fileUrl?: string, fileType?: string, flowType?: string) {
+async function handleFlow(supabase: any, question: string, apiKey: string, imageUrls?: string[], pdfUrls?: string[], flowType?: string) {
   const content: any[] = [{ type: "text", text: question || "Analiza este contrato y extrae toda la información." }];
-  if (imageUrl) content.push({ type: "image_url", image_url: { url: imageUrl } });
-  if (fileUrl && fileType === "pdf") content.push({ type: "file", file: { url: fileUrl } });
+  for (const url of imageUrls || []) content.push({ type: "image_url", image_url: { url } });
+  for (const url of pdfUrls || []) content.push({ type: "file", file: { url } });
 
   const messages = [{ role: "system", content: CONTRACT_FLOW_PROMPT }, { role: "user", content }];
   const raw = await callOpenAI(apiKey, messages, 0.2, 3000, true);

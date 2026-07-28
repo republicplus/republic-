@@ -32,9 +32,9 @@ export function ContractFlow() {
   const [busy, setBusy] = useState(false)
   const [inputText, setInputText] = useState('')
   const [inputType, setInputType] = useState('producto')
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [fileName, setFileName] = useState<string | null>(null)
+  const [files, setFiles] = useState<{ name: string; type: string; dataUrl?: string; storageUrl?: string }[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
+  const MAX_FILES = 10
 
   useEffect(() => { load() }, [])
   async function load() {
@@ -42,33 +42,45 @@ export function ContractFlow() {
     if (data) setFlows(data as Flow[])
   }
 
-  async function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0]
-    if (!f) return
-    setFileName(f.name)
-    if (f.type.startsWith('image/')) {
-      const reader = new FileReader()
-      reader.onload = () => setImageUrl(reader.result as string)
-      reader.readAsDataURL(f)
-    } else if (f.type === 'application/pdf') {
-      const ext = f.name.split('.').pop()
-      const path = `flow-uploads/${crypto.randomUUID()}.${ext}`
-      const { error } = await supabase.storage.from('documents').upload(path, f)
-      if (!error) {
-        const { data: pub } = supabase.storage.from('documents').getPublicUrl(path)
-        setImageUrl(pub.publicUrl)
+  async function onFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(e.target.files || [])
+    if (selected.length === 0) return
+    const room = MAX_FILES - files.length
+    if (room <= 0) { alert(`Máximo ${MAX_FILES} archivos`); return }
+    const toAdd = selected.slice(0, room)
+    const newFiles: { name: string; type: string; dataUrl?: string; storageUrl?: string }[] = []
+    for (const f of toAdd) {
+      if (f.type.startsWith('image/')) {
+        const dataUrl = await new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(f) })
+        newFiles.push({ name: f.name, type: 'image', dataUrl })
+      } else if (f.type === 'application/pdf') {
+        const ext = f.name.split('.').pop()
+        const path = `flow-uploads/${crypto.randomUUID()}.${ext}`
+        const { error } = await supabase.storage.from('documents').upload(path, f)
+        if (!error) {
+          const { data: pub } = supabase.storage.from('documents').getPublicUrl(path)
+          newFiles.push({ name: f.name, type: 'pdf', storageUrl: pub.publicUrl })
+        }
       }
     }
+    setFiles((prev) => [...prev, ...newFiles])
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
+  function removeFile(idx: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== idx))
   }
 
   async function analyze() {
-    if (!inputText.trim() && !imageUrl) return
+    if (!inputText.trim() && files.length === 0) return
     setBusy(true)
     try {
+      const imageUrls = files.filter((f) => f.type === 'image' && f.dataUrl).map((f) => f.dataUrl!)
+      const pdfUrls = files.filter((f) => f.type === 'pdf' && f.storageUrl).map((f) => f.storageUrl!)
       const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`
       const res = await fetch(fnUrl, {
         method: 'POST', headers: { 'Content-Type':'application/json', Authorization:`Bearer ${session?.access_token}` },
-        body: JSON.stringify({ mode: 'flow', question: inputText, imageUrl, flowType: inputType }),
+        body: JSON.stringify({ mode: 'flow', question: inputText, imageUrls, pdfUrls, flowType: inputType }),
       })
       if (!res.ok) throw new Error('Error al analizar')
       const data = await res.json()
@@ -94,7 +106,7 @@ export function ContractFlow() {
         setFlows((f) => [inserted as Flow, ...f])
         setDetail(inserted as Flow)
         setDetailOpen(true)
-        setNewOpen(false); setInputText(''); setImageUrl(null); setFileName(null)
+        setNewOpen(false); setInputText(''); setFiles([])
       }
     } catch (err: any) { alert('Error: ' + err.message) }
     finally { setBusy(false) }
@@ -256,27 +268,39 @@ export function ContractFlow() {
       )}
 
       {/* New analysis modal */}
-      <Modal open={newOpen} onClose={() => { setNewOpen(false); setInputText(''); setImageUrl(null); setFileName(null) }} title="Analyze Contract" wide>
+      <Modal open={newOpen} onClose={() => { setNewOpen(false); setInputText(''); setFiles([]) }} title="Analyze Contract" wide>
         <div className="space-y-4">
-          <p className="text-sm text-violet-300/70">Sube un PDF, screenshot, pega el texto del contrato y la IA extraerá producto/servicio, buscará proveedores, calculará costos, validará cumplimiento y generará una cotización.</p>
+          <p className="text-sm text-violet-300/70">Sube hasta {MAX_FILES} archivos (PDFs, imágenes o ambos) y/o pega el texto del contrato. La IA extraerá producto/servicio, buscará proveedores, calculará costos, validará cumplimiento y generará una cotización.</p>
           <Select label="Tipo de contrato" value={inputType} onChange={(e) => setInputType(e.target.value)}>
             <option value="producto">Producto</option>
             <option value="servicio">Servicio</option>
             <option value="mixto">Producto + Servicio</option>
           </Select>
           <div onClick={() => fileRef.current?.click()} className="border-2 border-dashed border-violet-400/30 rounded-xl p-6 text-center cursor-pointer hover:border-fuchsia-400/50 hover:bg-violet-500/5 transition">
-            <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={onFileSelected} />
-            {fileName ? (
-              <div className="text-sm text-violet-100"><div className="font-medium">{fileName}</div></div>
-            ) : (
-              <div className="text-sm text-violet-300/70"><Upload size={20} className="mx-auto mb-2 text-fuchsia-400" />Subir PDF o imagen del contrato</div>
-            )}
+            <input ref={fileRef} type="file" accept="image/*,application/pdf" multiple className="hidden" onChange={onFilesSelected} />
+            <div className="text-sm text-violet-300/70"><Upload size={20} className="mx-auto mb-2 text-fuchsia-400" />Subir PDFs o imágenes ({files.length}/{MAX_FILES})</div>
           </div>
-          {imageUrl && imageUrl.startsWith('data:') && <img src={imageUrl} alt="Preview" className="max-h-40 rounded-xl border border-violet-400/20 mx-auto" />}
+          {files.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {files.map((f, i) => (
+                <div key={i} className="relative group">
+                  {f.type === 'image' && f.dataUrl ? (
+                    <img src={f.dataUrl} alt={f.name} className="h-20 w-20 object-cover rounded-lg border border-violet-400/20" />
+                  ) : (
+                    <div className="h-20 w-20 rounded-lg border border-violet-400/20 flex flex-col items-center justify-center bg-violet-950/40">
+                      <FileText size={18} className="text-rose-300" />
+                      <span className="text-[9px] text-violet-300/70 mt-1 px-1 truncate w-full text-center">{f.name}</span>
+                    </div>
+                  )}
+                  <button onClick={() => removeFile(i)} className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition"><Trash2 size={11} /></button>
+                </div>
+              ))}
+            </div>
+          )}
           <Textarea label="O pega el texto del contrato" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Pega aquí el texto del RFQ, bid o contrato…" className="min-h-[150px]" />
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => { setNewOpen(false); setInputText(''); setImageUrl(null); setFileName(null) }}>Cancelar</Button>
-            <Button variant="gold" onClick={analyze} disabled={busy || (!inputText.trim() && !imageUrl)}>
+            <Button variant="secondary" onClick={() => { setNewOpen(false); setInputText(''); setFiles([]) }}>Cancelar</Button>
+            <Button variant="gold" onClick={analyze} disabled={busy || (!inputText.trim() && files.length === 0)}>
               {busy ? <><Loader2 size={16} className="animate-spin" /> Analyzing…</> : <><Sparkles size={16} /> Analyze Contract</>}
             </Button>
           </div>
