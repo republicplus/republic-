@@ -83,10 +83,10 @@ export function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up" style={{ animationDelay: '0.4s' }}>
-            <Link to={dashboardPath} className="group px-8 py-4 rounded-2xl bg-gradient-to-r from-gold-400 to-gold-600 text-[#0a0418] font-bold text-base hover:shadow-xl hover:shadow-gold-500/30 transition flex items-center gap-2">
+            <a href="#planes" className="group px-8 py-4 rounded-2xl bg-gradient-to-r from-gold-400 to-gold-600 text-[#0a0418] font-bold text-base hover:shadow-xl hover:shadow-gold-500/30 transition flex items-center gap-2">
               Quiero usar el software
               <ArrowRight size={18} className="group-hover:translate-x-1 transition" />
-            </Link>
+            </a>
             <a href="#done-for-you" className="group px-8 py-4 rounded-2xl border border-white/20 bg-white/5 text-white font-bold text-base hover:border-gold-400/40 hover:bg-white/10 transition flex items-center gap-2">
               Quiero que lo hagan por mí
               <ArrowRight size={18} className="group-hover:translate-x-1 transition" />
