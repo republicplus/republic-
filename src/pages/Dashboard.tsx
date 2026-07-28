@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { Card, Badge, Button, SectionTitle } from '../components/ui'
+import { Card, Badge, Button, SectionTitle, InfoNote } from '../components/ui'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
 import { Wallet as WalletIcon, TrendingUp, ArrowDownRight, Clock, CreditCard, Package, FileText, Sparkles, Send, Plus, MessageSquare, Trash2, Upload, Loader as Loader2, Paperclip } from 'lucide-react'
 
@@ -161,6 +161,11 @@ export function Dashboard() {
           )
         })}
       </div>
+
+      <InfoNote title="¿Qué es ArcaBid?">
+        <p>ArcaBid es tu plataforma para gestionar contratos del gobierno de principio a fin: encuentra oportunidades, administra proveedores, capital y pagos, y usa el Orbe AI para analizar documentos y responder dudas.</p>
+        <p>Usa el panel izquierdo para navegar entre módulos. Sube información manualmente o en bulk con IA para acelerar tu trabajo.</p>
+      </InfoNote>
 
       {/* Main: AI Assistant + Side panels */}
       <div className="grid lg:grid-cols-3 gap-6">
