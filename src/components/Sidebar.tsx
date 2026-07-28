@@ -43,7 +43,7 @@ const NAV_SECTIONS: NavSection[] = [
 
 export function Sidebar() {
   const nav = useNavigate()
-  const { session, signOut } = useAuth()
+  const { session, role, signOut } = useAuth()
   const { t } = useI18n()
 
   return (
@@ -104,6 +104,7 @@ export function Sidebar() {
         </NavLink>
         <div className="px-3 py-1.5 text-xs text-violet-300/50 truncate">
           {session?.user?.email || ''}
+          {role === 'admin' && <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-gold-400">Admin</span>}
         </div>
         <button
           onClick={async () => { await signOut(); nav('/') }}
