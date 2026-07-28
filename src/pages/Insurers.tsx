@@ -41,8 +41,8 @@ export function Insurers() {
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><ShieldCheck size={20} className="text-fuchsia-400" /></div>
           <div>
-            <h3 className="font-semibold text-white">Aseguradoras de Capital</h3>
-            <p className="text-sm text-violet-200">Respaldo financiero si un inversionista incurre. Comisión configurable (ej. +5%).</p>
+            <h3 className="font-semibold text-white">Capital Backers</h3>
+            <p className="text-sm text-violet-200">Backup capital providers for awarded contracts.</p>
           </div>
           <Badge tone="gold">{formatCurrency(totalCapacity)}</Badge>
         </div>

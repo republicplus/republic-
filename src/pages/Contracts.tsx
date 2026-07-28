@@ -120,8 +120,8 @@ export function Contracts() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-bold text-violet-100">Contratos</h1>
-        <p className="text-sm text-violet-300/70 mt-1">Gestiona tus oportunidades y contratos gubernamentales</p>
+        <h1 className="font-display text-2xl font-bold text-violet-100">Current Contracts</h1>
+        <p className="text-sm text-violet-300/70 mt-1">Manage your active government contracts</p>
       </div>
 
       <InfoNote title="¿Qué es Contratos?">

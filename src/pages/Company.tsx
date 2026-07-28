@@ -37,8 +37,8 @@ export function Company() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-bold text-violet-100">Mi Empresa</h1>
-        <p className="text-sm text-violet-300/70 mt-1">Perfil de tu compañía para licitaciones del gobierno</p>
+        <h1 className="font-display text-2xl font-bold text-violet-100">Company Profile</h1>
+        <p className="text-sm text-violet-300/70 mt-1">Your company profile for government contracting</p>
       </div>
       <InfoNote title="¿Qué es Mi Empresa?">
         <p>Esta es la ficha de tu compañía. Aquí registras tu información fiscal, códigos NAICS, certificaciones gubernamentales, capacidad financiera y de bonding.</p>

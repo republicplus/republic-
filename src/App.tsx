@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
+import { I18nProvider } from './lib/i18n'
 import { AuthPage } from './pages/AuthPage'
 import { LandingPage } from './pages/LandingPage'
 import { Dashboard } from './pages/Dashboard'
@@ -14,6 +15,8 @@ import { PoolOpportunities } from './pages/PoolOpportunities'
 import { Company } from './pages/Company'
 import { Investors } from './pages/Investors'
 import { Insurers } from './pages/Insurers'
+import { Capital } from './pages/Capital'
+import { Profile } from './pages/Profile'
 import { ContractDetail } from './pages/ContractDetail'
 import { Tools } from './pages/Tools'
 import { Documents } from './pages/Documents'
@@ -21,7 +24,7 @@ import { Risk } from './pages/Risk'
 
 function Shell() {
   const { session, loading, isAdmin } = useAuth()
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-violet-300/70">Cargando…</div>
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-violet-300/70">Loading…</div>
   const authorized = session || isAdmin
   return (
     <Routes>
@@ -48,9 +51,11 @@ function AppShell() {
           <Route path="bid-pages" element={<BidPages />} />
           <Route path="private-bidding" element={<PrivateBidding />} />
           <Route path="wallet" element={<Wallet />} />
+          <Route path="capital" element={<Capital />} />
           <Route path="investors" element={<Investors />} />
           <Route path="insurers" element={<Insurers />} />
           <Route path="company" element={<Company />} />
+          <Route path="profile" element={<Profile />} />
           <Route path="tools" element={<Tools />} />
           <Route path="documents" element={<Documents />} />
           <Route path="risk" element={<Risk />} />
@@ -63,8 +68,10 @@ function AppShell() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Shell />
-    </AuthProvider>
+    <I18nProvider>
+      <AuthProvider>
+        <Shell />
+      </AuthProvider>
+    </I18nProvider>
   )
 }

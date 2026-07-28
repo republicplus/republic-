@@ -1,45 +1,40 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import {
-  LayoutDashboard, FileText, Store, Wallet, Sparkles, LogOut,
-  Layers, Users, Building2, ShieldCheck, Globe, FileSearch, Crown, Wrench,
-} from 'lucide-react'
+import { useI18n } from '../lib/i18n'
+import { LayoutDashboard, FileText, Store, Wallet, Sparkles, LogOut, Settings, Layers, Users, Building2, ShieldCheck, Globe, FileSearch, Crown, Wrench, Landmark, TriangleAlert as AlertTriangle } from 'lucide-react'
 import { cn } from '../lib/utils'
 
-const NAV_SECTIONS: { label: string; items: { to: string; label: string; icon: any; end?: boolean }[] }[] = [
+type NavItem = { to: string; labelKey: string; icon: any; end?: boolean }
+type NavSection = { labelKey: string; items: NavItem[] }
+
+const NAV_SECTIONS: NavSection[] = [
   {
-    label: 'Principal',
+    labelKey: 'section.main',
     items: [
-      { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
-      { to: '/app/contracts', label: 'Contratos', icon: FileText },
-      { to: '/app/flow', label: 'Contract Flow', icon: FileSearch },
-      { to: '/app/pool-opportunities', label: 'Pool Opportunities', icon: Layers },
+      { to: '/app', labelKey: 'nav.dashboard', icon: LayoutDashboard, end: true },
+      { to: '/app/bid-pages', labelKey: 'nav.bid_pages', icon: Globe },
+      { to: '/app/flow', labelKey: 'nav.contract_flow', icon: FileSearch },
+      { to: '/app/contracts', labelKey: 'nav.contracts', icon: FileText },
     ],
   },
   {
-    label: 'Proveedores y Licitaciones',
+    labelKey: 'section.execution',
     items: [
-      { to: '/app/suppliers', label: 'Proveedores', icon: Store },
-      { to: '/app/bid-pages', label: 'Bid Pages', icon: Globe },
-      { to: '/app/private-bidding', label: 'Licitaciones Privadas', icon: ShieldCheck },
+      { to: '/app/suppliers', labelKey: 'nav.suppliers', icon: Store },
+      { to: '/app/wallet', labelKey: 'nav.wallet', icon: Wallet },
+      { to: '/app/capital', labelKey: 'nav.capital', icon: Landmark },
+      { to: '/app/investors', labelKey: 'nav.investors', icon: Users },
+      { to: '/app/insurers', labelKey: 'nav.insurers', icon: ShieldCheck },
     ],
   },
   {
-    label: 'Capital e Inversionistas',
+    labelKey: 'section.company',
     items: [
-      { to: '/app/wallet', label: 'Wallet', icon: Wallet },
-      { to: '/app/investors', label: 'Inversionistas', icon: Users },
-      { to: '/app/insurers', label: 'Aseguradoras', icon: ShieldCheck },
-    ],
-  },
-  {
-    label: 'Empresa',
-    items: [
-      { to: '/app/company', label: 'Mi Empresa', icon: Building2 },
-      { to: '/app/tools', label: 'Herramientas', icon: Wrench },
-      { to: '/app/documents', label: 'Documentos', icon: FileText },
-      { to: '/app/risk', label: 'Análisis de Riesgo', icon: Crown },
+      { to: '/app/company', labelKey: 'nav.company', icon: Building2 },
+      { to: '/app/tools', labelKey: 'nav.tools', icon: Wrench },
+      { to: '/app/documents', labelKey: 'nav.documents', icon: FileText },
+      { to: '/app/risk', labelKey: 'nav.risk', icon: AlertTriangle },
     ],
   },
 ]
@@ -47,6 +42,7 @@ const NAV_SECTIONS: { label: string; items: { to: string; label: string; icon: a
 export function Sidebar() {
   const nav = useNavigate()
   const { session, isAdmin, signOut } = useAuth()
+  const { t } = useI18n()
 
   return (
     <aside className="w-60 shrink-0 border-r border-violet-400/15 bg-[#0e0720] flex flex-col h-screen sticky top-0">
@@ -64,8 +60,8 @@ export function Sidebar() {
 
       <nav className="flex-1 px-3 overflow-y-auto no-scrollbar pb-4">
         {NAV_SECTIONS.map((section) => (
-          <div key={section.label} className="mb-4">
-            <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-violet-400/40">{section.label}</div>
+          <div key={section.labelKey} className="mb-4">
+            <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-violet-400/40">{t(section.labelKey)}</div>
             <div className="space-y-0.5">
               {section.items.map((item) => {
                 const Icon = item.icon
@@ -82,7 +78,7 @@ export function Sidebar() {
                     )}
                   >
                     <Icon size={16} />
-                    {item.label}
+                    {t(item.labelKey)}
                   </NavLink>
                 )
               })}
@@ -92,6 +88,18 @@ export function Sidebar() {
       </nav>
 
       <div className="px-3 py-3 border-t border-violet-400/15">
+        <NavLink
+          to="/app/profile"
+          className={({ isActive }) => cn(
+            'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition mb-0.5',
+            isActive
+              ? 'bg-fuchsia-500/15 text-fuchsia-200 border border-fuchsia-400/30'
+              : 'text-violet-300/70 hover:text-violet-100 hover:bg-violet-500/5 border border-transparent'
+          )}
+        >
+          <Settings size={16} />
+          {t('nav.settings')}
+        </NavLink>
         <div className="px-3 py-1.5 text-xs text-violet-300/50 truncate">
           {session?.user?.email || (isAdmin ? 'Admin' : '')}
         </div>
@@ -99,7 +107,7 @@ export function Sidebar() {
           onClick={async () => { await signOut(); nav('/') }}
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-violet-300/70 hover:text-rose-300 hover:bg-rose-500/5 transition w-full"
         >
-          <LogOut size={16} /> Cerrar sesión
+          <LogOut size={16} /> {t('nav.logout')}
         </button>
       </div>
     </aside>

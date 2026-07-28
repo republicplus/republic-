@@ -9,7 +9,7 @@ const STATUS = ['nuevo','analizando','cotizado','enviado','ganado','perdido']
 const STATUS_LABEL: Record<string,string> = { nuevo:'Nuevo', analizando:'En análisis', cotizado:'Cotizado', enviado:'Enviado', ganado:'Ganado', perdido:'Perdido' }
 const STATUS_TONE: Record<string,any> = { nuevo:'neutral', analizando:'info', cotizado:'gold', enviado:'info', ganado:'success', perdido:'error' }
 const COMPLIANCE_TONE: Record<string,any> = { cumple:'success', cumple_parcial:'warning', no_cumple:'error', revision:'info' }
-const COMPLIANCE_LABEL: Record<string,string> = { cumple:'Cumple', cumple_parcial:'Cumple parcialmente', no_cumple:'No cumple', revision:'Revisión manual' }
+const COMPLIANCE_LABEL: Record<string,string> = { cumple:'Compliant', cumple_parcial:'Partially Compliant', no_cumple:'Non-Compliant', revision:'Manual Review' }
 
 type Flow = {
   id: string; contract_name: string | null; contract_type: string; status: string
@@ -110,35 +110,58 @@ export function ContractFlow() {
     const ca = flow.cost_analysis || {}
     const comp = flow.compliance_data || {}
     const lines = [
-      `COTIZACIÓN - ARCA BID`,
-      `Fecha: ${formatDate(flow.created_at)}`,
+      `QUOTE - ARCA BID`,
+      `Date: ${formatDate(flow.created_at)}`,
       ``,
-      `Contrato: ${flow.contract_name || 'N/A'}`,
-      `Agencia: ${e.agency || 'N/A'}`,
-      `Tipo: ${flow.contract_type}`,
+      `Contract: ${flow.contract_name || 'N/A'}`,
+      `Agency: ${e.agency || 'N/A'}`,
+      `Type: ${flow.contract_type}`,
       ``,
-      `PRODUCTO / SERVICIO`,
-      `Nombre: ${e.product_name || e.service_type || 'N/A'}`,
-      `Cantidad: ${e.quantity || 'N/A'}`,
-      `Especificaciones: ${e.specifications || e.service_description || 'N/A'}`,
+      `PRODUCT / SERVICE`,
+      `Name: ${e.product_name || e.service_type || 'N/A'}`,
+      `Quantity: ${e.quantity || 'N/A'}`,
+      `Specifications: ${e.specifications || e.service_description || 'N/A'}`,
       ``,
-      `ANÁLISIS DE COSTOS`,
+      `COST ANALYSIS`,
       ...(ca.items || []).map((i: any) => `${i.label}: ${formatCurrency(i.amount)}`),
-      `Costo total: ${formatCurrency(ca.total_cost)}`,
-      `Margen: ${ca.margin_percent || flow.margin || 0}%`,
-      `Precio recomendado: ${formatCurrency(ca.recommended_price || flow.recommended_price)}`,
-      `Ganancia estimada: ${formatCurrency(ca.estimated_profit || flow.estimated_profit)}`,
+      `Total cost: ${formatCurrency(ca.total_cost)}`,
+      `Margin: ${ca.margin_percent || flow.margin || 0}%`,
+      `Recommended price: ${formatCurrency(ca.recommended_price || flow.recommended_price)}`,
+      `Estimated profit: ${formatCurrency(ca.estimated_profit || flow.estimated_profit)}`,
       ``,
-      `CUMPLIMIENTO`,
-      `Nivel: ${COMPLIANCE_LABEL[flow.compliance_level || ''] || flow.compliance_level || 'N/A'}`,
-      `Notas de riesgo: ${comp.risk_notes || 'N/A'}`,
+      `COMPLIANCE`,
+      `Level: ${COMPLIANCE_LABEL[flow.compliance_level || ''] || flow.compliance_level || 'N/A'}`,
+      `Risk notes: ${comp.risk_notes || 'N/A'}`,
       ``,
-      `RESUMEN`,
+      `SUMMARY`,
       flow.extracted_data?.summary || '',
     ].join('\n')
     const blob = new Blob([lines], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url; a.download = `cotizacion-${flow.contract_name || 'arcafloid'}.txt`; a.click()
+    const a = document.createElement('a'); a.href = url; a.download = `quote-${flow.contract_name || 'arcabid'}.txt`; a.click()
+  }
+
+  async function rejectOpportunity(id: string) {
+    await supabase.from('contract_flows').update({ status: 'rejected' }).eq('id', id)
+    setDetailOpen(false); load()
+  }
+
+  async function moveToContracts(id: string) {
+    const { data: flow } = await supabase.from('contract_flows').select('*').eq('id', id).maybeSingle()
+    if (!flow) return
+    const e = flow.extracted_data || {}
+    const ca = flow.cost_analysis || {}
+    await supabase.from('contracts').insert({
+      title: flow.contract_name || 'Imported from Analyzer',
+      agency: e.agency || null,
+      total_value: ca.recommended_price || flow.recommended_price || 0,
+      estimated_cost: ca.total_cost || flow.estimated_cost || 0,
+      estimated_profit: ca.estimated_profit || flow.estimated_profit || 0,
+      capital_required: ca.total_cost || flow.estimated_cost || 0,
+      status: 'draft',
+    })
+    await supabase.from('contract_flows').update({ status: 'approved' }).eq('id', id)
+    setDetailOpen(false); load()
   }
 
   const filtered = flows.filter((f) =>
@@ -151,8 +174,8 @@ export function ContractFlow() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-bold text-violet-100">Automatic Contract Flow</h1>
-        <p className="text-sm text-violet-300/70 mt-1">Sube un contrato, texto o screenshot y la IA analiza producto, proveedores, costos, cumplimiento y genera una cotización</p>
+        <h1 className="font-display text-2xl font-bold text-violet-100">Contract Analyzer Flow</h1>
+        <p className="text-sm text-violet-300/70 mt-1">Upload a contract, text or screenshot and AI analyzes eligibility, FAR requirements, certifications, capital needed, estimated profit, risk score, suggested suppliers, timeline and competition</p>
       </div>
 
       <InfoNote title="¿Qué es Automatic Contract Flow?">
@@ -188,7 +211,7 @@ export function ContractFlow() {
       </div>
 
       {filtered.length === 0 ? (
-        <Card><EmptyState icon={<FileText size={22} />} title="Sin análisis" subtitle="Sube un contrato, texto o screenshot y la IA hará el análisis completo." action={<Button variant="gold" onClick={() => setNewOpen(true)}><Sparkles size={16} /> Analyze Contract</Button>} /></Card>
+        <Card><EmptyState icon={<FileText size={22} />} title="No analysis yet" subtitle="Upload a contract, text or screenshot and AI will do the full analysis." action={<Button variant="gold" onClick={() => setNewOpen(true)}><Sparkles size={16} /> Analyze Contract</Button>} /></Card>
       ) : (
         <Card className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -254,7 +277,7 @@ export function ContractFlow() {
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={() => { setNewOpen(false); setInputText(''); setImageUrl(null); setFileName(null) }}>Cancelar</Button>
             <Button variant="gold" onClick={analyze} disabled={busy || (!inputText.trim() && !imageUrl)}>
-              {busy ? <><Loader2 size={16} className="animate-spin" /> Analizando…</> : <><Sparkles size={16} /> Analyze Contract</>}
+              {busy ? <><Loader2 size={16} className="animate-spin" /> Analyzing…</> : <><Sparkles size={16} /> Analyze Contract</>}
             </Button>
           </div>
         </div>
@@ -354,6 +377,8 @@ export function ContractFlow() {
               <Button variant="gold" onClick={() => downloadQuote(detail)}><Download size={15} /> Download Quote</Button>
               <Button variant="primary"><Save size={15} /> Save to CRM</Button>
               <Button variant="secondary"><Send size={15} /> Send to Client</Button>
+              <Button variant="danger" onClick={() => rejectOpportunity(detail.id)}><XCircle size={15} /> Reject Opportunity</Button>
+              <Button variant="primary" onClick={() => moveToContracts(detail.id)}><CheckCircle2 size={15} /> Move to Current Contracts</Button>
             </div>
           </div>
         )}
