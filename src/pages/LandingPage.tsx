@@ -59,6 +59,19 @@ export function LandingPage() {
         )}
       </nav>
 
+      {/* ============ BANNER IMAGE — primera posición ============ */}
+      <section className="pt-[72px]">
+        <div className="relative w-full overflow-hidden">
+          <img
+            src="/ChatGPT_Image_Jul_27,_2026,_09_02_06_PM.png"
+            alt="Arca Bid — Government Contracts, trabaja con el mejor cliente del mundo"
+            className="w-full object-cover object-top"
+            style={{ maxHeight: '600px' }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0a0418]" />
+        </div>
+      </section>
+
       {/* ============ HERO ============ */}
       <section className="relative min-h-screen flex items-center justify-center hero-grid-bg pt-20">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-gold-500/10 blur-3xl" />
@@ -375,3 +388,6 @@ export function LandingPage() {
     </div>
   )
 }
+
+
+export { LandingPage }
