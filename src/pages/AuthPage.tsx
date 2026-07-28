@@ -1,15 +1,9 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { useAuth } from '../lib/auth'
-import { Sparkles, ShieldCheck, Loader as Loader2, Phone } from 'lucide-react'
+import { Sparkles, Loader as Loader2, Phone } from 'lucide-react'
 import { Button, Input } from '../components/ui'
 
-const ADMIN_CODE = 'ARCABID2025'
-
 export function AuthPage() {
-  const navigate = useNavigate()
-  const { setAdmin } = useAuth()
   const [mode, setMode] = useState<'signin' | 'signup'>('signup')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -17,9 +11,6 @@ export function AuthPage() {
   const [busy, setBusy] = useState(false)
   const [googleBusy, setGoogleBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showAdmin, setShowAdmin] = useState(false)
-  const [adminCode, setAdminCode] = useState('')
-  const [adminError, setAdminError] = useState<string | null>(null)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -50,16 +41,6 @@ export function AuthPage() {
       options: { redirectTo: window.location.origin + '/app' },
     })
     if (error) { setError(error.message); setGoogleBusy(false) }
-  }
-
-  function verifyAdmin() {
-    setAdminError(null)
-    if (adminCode.trim() === ADMIN_CODE) {
-      setAdmin(true)
-      window.location.href = '/app'
-    } else {
-      setAdminError('Código incorrecto. Intenta de nuevo.')
-    }
   }
 
   return (
@@ -141,45 +122,6 @@ export function AuthPage() {
             </button>
           </p>
 
-          {/* Admin Access */}
-          <div className="mt-6 pt-5 border-t border-violet-400/15">
-            {!showAdmin ? (
-              <button
-                onClick={() => setShowAdmin(true)}
-                className="w-full flex items-center justify-center gap-2 text-sm text-violet-300/50 hover:text-fuchsia-400 transition"
-              >
-                <ShieldCheck size={15} /> Acceso Admin
-              </button>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm text-violet-100 font-medium">
-                  <ShieldCheck size={15} className="text-fuchsia-400" /> Acceso Admin
-                </div>
-                <div>
-                  <label className="block text-xs text-violet-300/70 mb-1.5 font-medium">Código de acceso</label>
-                  <input
-                    type="password"
-                    value={adminCode}
-                    onChange={(e) => { setAdminCode(e.target.value); setAdminError(null) }}
-                    placeholder="••••••••"
-                    className="w-full px-4 py-2.5 rounded-xl bg-violet-950/60 border border-violet-400/20 text-sm text-white placeholder-violet-400/40 focus:outline-none focus:border-fuchsia-400/60 transition"
-                    onKeyDown={(e) => e.key === 'Enter' && verifyAdmin()}
-                  />
-                </div>
-                {adminError && <p className="text-sm text-rose-300 bg-rose-500/10 border border-rose-400/30 rounded-xl px-3 py-2">{adminError}</p>}
-                <Button variant="primary" className="w-full" onClick={verifyAdmin} disabled={!adminCode}>
-                  Verificar
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => { setShowAdmin(false); setAdminCode(''); setAdminError(null) }}
-                  className="w-full text-xs text-violet-300/50 hover:text-violet-200 transition"
-                >
-                  Cancelar
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>

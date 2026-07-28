@@ -24,9 +24,9 @@ import { Risk } from './pages/Risk'
 import { NetTerms } from './pages/NetTerms'
 
 function Shell() {
-  const { session, loading, isAdmin } = useAuth()
+  const { session, loading } = useAuth()
   if (loading) return <div className="min-h-screen flex items-center justify-center text-violet-300/70">Loading…</div>
-  const authorized = session || isAdmin
+  const authorized = !!session
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
