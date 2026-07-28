@@ -2,7 +2,8 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, SectionTitle, InfoNote } from '../components/ui'
-import { Sparkles, Loader as Loader2, Upload, FileText, Search, Filter, Eye, Download, Save, Send, Plus, Trash2, CircleCheck as CheckCircle2, TriangleAlert as AlertTriangle, Circle as XCircle, CircleHelp as HelpCircle } from 'lucide-react'
+import { ContractFlowPanel, type Flow } from '../components/ContractFlowPanel'
+import { Sparkles, Loader as Loader2, Upload, FileText, Search, Filter, Eye, Download, Save, Send, Plus, Trash2, CircleCheck as CheckCircle2, TriangleAlert as AlertTriangle, Circle as XCircle, CircleHelp as HelpCircle, ArrowLeft } from 'lucide-react'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
 
 const STATUS = ['nuevo','analizando','cotizado','enviado','ganado','perdido']
@@ -10,14 +11,6 @@ const STATUS_LABEL: Record<string,string> = { nuevo:'Nuevo', analizando:'En aná
 const STATUS_TONE: Record<string,any> = { nuevo:'neutral', analizando:'info', cotizado:'gold', enviado:'info', ganado:'success', perdido:'error' }
 const COMPLIANCE_TONE: Record<string,any> = { cumple:'success', cumple_parcial:'warning', no_cumple:'error', revision:'info' }
 const COMPLIANCE_LABEL: Record<string,string> = { cumple:'Compliant', cumple_parcial:'Partially Compliant', no_cumple:'Non-Compliant', revision:'Manual Review' }
-
-type Flow = {
-  id: string; contract_name: string | null; contract_type: string; status: string
-  input_text: string | null; extracted_data: any; suppliers_data: any; cost_analysis: any
-  compliance_data: any; quote_data: any; recommended_price: number | null
-  estimated_cost: number | null; estimated_profit: number | null; margin: number | null
-  compliance_level: string | null; close_date: string | null; created_at: string
-}
 
 export function ContractFlow() {
   const { session } = useAuth()
@@ -100,6 +93,18 @@ export function ContractFlow() {
         estimated_profit: ca.estimated_profit || null,
         margin: ca.margin_percent || null,
         compliance_level: data.compliance?.level || null,
+        solicitation_number: data.extracted?.solicitation_number || null,
+        agency: data.extracted?.agency || null,
+        naics: data.extracted?.naics || null,
+        due_date: data.extracted?.due_date || null,
+        award_date: data.extracted?.award_date || null,
+        delivery_date: data.extracted?.delivery_date || null,
+        total_value: data.extracted?.total_value || null,
+        executive_analysis: data.executive_analysis || {},
+        technical_requirements: data.technical_requirements || {},
+        supplier_review: data.supplier_review || {},
+        financial_analysis: data.financial_analysis || {},
+        risk_decision: data.risk_decision || {},
       }
       const { data: inserted } = await supabase.from('contract_flows').insert(insertPayload).select().single()
       if (inserted) {
@@ -163,17 +168,62 @@ export function ContractFlow() {
     if (!flow) return
     const e = flow.extracted_data || {}
     const ca = flow.cost_analysis || {}
+    const fin = flow.financial_analysis || {}
     await supabase.from('contracts').insert({
       title: flow.contract_name || 'Imported from Analyzer',
-      agency: e.agency || null,
-      total_value: ca.recommended_price || flow.recommended_price || 0,
-      estimated_cost: ca.total_cost || flow.estimated_cost || 0,
-      estimated_profit: ca.estimated_profit || flow.estimated_profit || 0,
-      capital_required: ca.total_cost || flow.estimated_cost || 0,
+      agency: e.agency || flow.agency || null,
+      total_value: fin.revenue?.estimated_contract_value || ca.recommended_price || flow.recommended_price || flow.total_value || 0,
+      estimated_cost: fin.results?.total_estimated_cost || ca.total_cost || flow.estimated_cost || 0,
+      estimated_profit: fin.results?.net_profit || ca.estimated_profit || flow.estimated_profit || 0,
+      capital_required: fin.results?.required_working_capital || ca.total_cost || flow.estimated_cost || 0,
       status: 'draft',
     })
     await supabase.from('contract_flows').update({ status: 'approved' }).eq('id', id)
     setDetailOpen(false); load()
+  }
+
+  async function saveForLater(id: string) {
+    await supabase.from('contract_flows').update({ status: 'saved' }).eq('id', id)
+    setDetailOpen(false); load()
+  }
+
+  async function saveAnalysis(id: string) {
+    await supabase.from('contract_flows').update({ updated_at: new Date().toISOString() }).eq('id', id)
+    alert('Análisis guardado')
+  }
+
+  async function reAnalyze(flow: Flow) {
+    setBusy(true)
+    try {
+      const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`
+      const res = await fetch(fnUrl, {
+        method: 'POST', headers: { 'Content-Type':'application/json', Authorization:`Bearer ${session?.access_token}` },
+        body: JSON.stringify({ mode: 'flow', question: flow.input_text || '', imageUrls: [], pdfUrls: [], flowType: flow.contract_type }),
+      })
+      if (!res.ok) throw new Error('Error al analizar')
+      const data = await res.json()
+      const ca = data.cost_analysis || {}
+      const updates = {
+        extracted_data: data.extracted || {},
+        suppliers_data: data.suppliers || [],
+        cost_analysis: ca,
+        compliance_data: data.compliance || {},
+        recommended_price: ca.recommended_price || null,
+        estimated_cost: ca.total_cost || null,
+        estimated_profit: ca.estimated_profit || null,
+        margin: ca.margin_percent || null,
+        compliance_level: data.compliance?.level || null,
+        executive_analysis: data.executive_analysis || {},
+        technical_requirements: data.technical_requirements || {},
+        supplier_review: data.supplier_review || {},
+        financial_analysis: data.financial_analysis || {},
+        risk_decision: data.risk_decision || {},
+      }
+      await supabase.from('contract_flows').update(updates).eq('id', flow.id)
+      setDetail((d) => d ? { ...d, ...updates } as Flow : d)
+      load()
+    } catch (err: any) { alert('Error: ' + err.message) }
+    finally { setBusy(false) }
   }
 
   const filtered = flows.filter((f) =>
@@ -185,6 +235,7 @@ export function ContractFlow() {
 
   return (
     <div className="space-y-6">
+      {!detailOpen && (<>
       <div>
         <h1 className="font-display text-2xl font-bold text-violet-100">Contract Analyzer Flow</h1>
         <p className="text-sm text-violet-300/70 mt-1">Upload a contract, text or screenshot and AI analyzes eligibility, FAR requirements, certifications, capital needed, estimated profit, risk score, suggested suppliers, timeline and competition</p>
@@ -266,6 +317,9 @@ export function ContractFlow() {
           </table>
         </Card>
       )}
+      </>
+
+      )}
 
       {/* New analysis modal */}
       <Modal open={newOpen} onClose={() => { setNewOpen(false); setInputText(''); setFiles([]) }} title="Analyze Contract" wide>
@@ -307,106 +361,25 @@ export function ContractFlow() {
         </div>
       </Modal>
 
-      {/* Detail modal */}
-      <Modal open={detailOpen} onClose={() => setDetailOpen(false)} title="Detalle del análisis" wide>
-        {detail && (
-          <div className="space-y-6">
-            {/* Extracted */}
-            <div>
-              <SectionTitle title="Producto / Servicio identificado" />
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                {Object.entries(detail.extracted_data || {}).filter(([,v]) => v && v !== '' && v !== false).map(([k,v]) => (
-                  <div key={k}><span className="text-violet-300/70">{k.replace(/_/g,' ')}:</span> <span className="text-violet-100">{String(v)}</span></div>
-                ))}
-              </div>
-            </div>
-
-            {/* Suppliers */}
-            {Array.isArray(detail.suppliers_data) && detail.suppliers_data.length > 0 && (
-              <div>
-                <SectionTitle title="Comparador de proveedores" />
-                <div className="space-y-2">
-                  {detail.suppliers_data.map((s: any, i: number) => (
-                    <div key={i} className="px-4 py-3 rounded-xl border border-violet-400/15">
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium text-violet-100">{s.name || 'Proveedor'}</div>
-                        {s.recommendation && <Badge tone="gold">{s.recommendation}</Badge>}
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
-                        {s.product && <div><span className="text-violet-300/70">Producto:</span> <span className="text-violet-200">{s.product}</span></div>}
-                        {s.unit_price != null && <div><span className="text-violet-300/70">Precio unit.:</span> <span className="text-violet-200">{formatCurrency(s.unit_price)}</span></div>}
-                        {s.availability && <div><span className="text-violet-300/70">Disponibilidad:</span> <span className="text-violet-200">{s.availability}</span></div>}
-                        {s.delivery_time && <div><span className="text-violet-300/70">Entrega:</span> <span className="text-violet-200">{s.delivery_time}</span></div>}
-                        {s.link && <a href={s.link} target="_blank" rel="noreferrer" className="text-fuchsia-300 col-span-2">Ver producto</a>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Cost analysis */}
-            {detail.cost_analysis && Object.keys(detail.cost_analysis).length > 0 && (
-              <div>
-                <SectionTitle title="Análisis de costos" />
-                <div className="space-y-2">
-                  {(detail.cost_analysis.items || []).map((i: any, idx: number) => (
-                    <div key={idx} className="flex items-center justify-between px-4 py-2 rounded-xl border border-violet-400/15 text-sm">
-                      <span className="text-violet-200">{i.label}</span>
-                      <span className="text-violet-100">{formatCurrency(i.amount)}</span>
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-rose-500/10 border border-rose-400/20 text-sm">
-                    <span className="text-rose-200 font-medium">Costo total</span>
-                    <span className="text-rose-100 font-bold">{formatCurrency(detail.cost_analysis.total_cost || detail.estimated_cost)}</span>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-teal-500/10 border border-teal-400/20 text-sm">
-                    <span className="text-teal-200 font-medium">Precio recomendado</span>
-                    <span className="text-teal-100 font-bold">{formatCurrency(detail.cost_analysis.recommended_price || detail.recommended_price)}</span>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-fuchsia-500/10 border border-fuchsia-400/20 text-sm">
-                    <span className="text-fuchsia-200 font-medium">Ganancia estimada</span>
-                    <span className="text-fuchsia-100 font-bold">{formatCurrency(detail.cost_analysis.estimated_profit || detail.estimated_profit)}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Compliance */}
-            {detail.compliance_data && Object.keys(detail.compliance_data).length > 0 && (
-              <div>
-                <SectionTitle title="Verificación de cumplimiento" />
-                <div className="mb-3">
-                  <Badge tone={COMPLIANCE_TONE[detail.compliance_level || ''] || 'neutral'}>
-                    {COMPLIANCE_LABEL[detail.compliance_level || ''] || detail.compliance_level || 'N/A'}
-                  </Badge>
-                </div>
-                <div className="space-y-2">
-                  {(detail.compliance_data.checks || []).map((c: any, i: number) => (
-                    <div key={i} className="flex items-start gap-2 px-4 py-2.5 rounded-xl border border-violet-400/15 text-sm">
-                      {c.status === 'pass' ? <CheckCircle2 size={16} className="text-teal-400 shrink-0 mt-0.5" /> : c.status === 'fail' ? <XCircle size={16} className="text-rose-400 shrink-0 mt-0.5" /> : <HelpCircle size={16} className="text-amber-400 shrink-0 mt-0.5" />}
-                      <div>
-                        <div className="text-violet-100">{c.criterion}</div>
-                        {c.explanation && <div className="text-xs text-violet-300/70 mt-0.5">{c.explanation}</div>}
-                      </div>
-                    </div>
-                  ))}
-                  {detail.compliance_data.risk_notes && <p className="text-xs text-amber-300 mt-2">⚠ {detail.compliance_data.risk_notes}</p>}
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-violet-400/15">
-              <Button variant="gold" onClick={() => downloadQuote(detail)}><Download size={15} /> Download Quote</Button>
-              <Button variant="primary"><Save size={15} /> Save to CRM</Button>
-              <Button variant="secondary"><Send size={15} /> Send to Client</Button>
-              <Button variant="danger" onClick={() => rejectOpportunity(detail.id)}><XCircle size={15} /> Reject Opportunity</Button>
-              <Button variant="primary" onClick={() => moveToContracts(detail.id)}><CheckCircle2 size={15} /> Move to Current Contracts</Button>
-            </div>
+      {/* Detail panel — full dashboard */}
+      {detailOpen && detail && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <Button variant="secondary" size="sm" onClick={() => setDetailOpen(false)}><ArrowLeft size={14} /> Back to list</Button>
+            <Button variant="secondary" size="sm" onClick={() => downloadQuote(detail)}><Download size={14} /> Download Quote</Button>
           </div>
-        )}
-      </Modal>
+          <ContractFlowPanel
+            flow={detail}
+            busy={busy}
+            onAnalyze={() => reAnalyze(detail)}
+            onUpload={() => fileRef.current?.click()}
+            onSave={() => saveAnalysis(detail.id)}
+            onMoveToContracts={() => moveToContracts(detail.id)}
+            onReject={() => rejectOpportunity(detail.id)}
+            onSaveForLater={() => saveForLater(detail.id)}
+          />
+        </div>
+      )}
     </div>
   )
 }

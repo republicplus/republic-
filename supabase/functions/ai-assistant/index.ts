@@ -43,7 +43,7 @@ Extrae cada fuente como un objeto separado en el array. type debe ser uno de: Ba
 const CONTRACT_FLOW_PROMPT = `Eres ArcaBid AI, experto en analizar contratos gubernamentales (RFQs, bids, RFPs).
 Analiza el documento o texto del contrato y extrae toda la información relevante.
 
-Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura:
+Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura exacta:
 {
   "extracted": {
     "contract_name": "", "agency": "", "solicitation_number": "", "naics": "", "psc": "",
@@ -52,11 +52,40 @@ Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura:
     "delivery_date": "", "delivery_location": "", "equivalents_allowed": false,
     "service_type": "", "service_description": "", "service_location": "",
     "start_date": "", "end_date": "", "duration": "", "personnel_required": "",
-    "licenses_required": "", "insurance_required": "", "special_conditions": ""
+    "licenses_required": "", "insurance_required": "", "special_conditions": "",
+    "contract_type": "", "due_date": "", "award_date": "", "total_value": null
+  },
+  "executive_analysis": {
+    "eligibility": "Eligible|Review|Not Eligible",
+    "opportunity_score": 0,
+    "win_probability": 0,
+    "risk_level": "Low|Medium|High",
+    "preparation_difficulty": "Easy|Moderate|Complex",
+    "estimated_preparation_time": "",
+    "recommendation": "",
+    "summary": ["", "", "", "", ""]
+  },
+  "technical_requirements": {
+    "scope": {
+      "product_service": "", "scope_summary": "", "quantity": null, "unit": "",
+      "brand_model_required": "", "equivalents_allowed": false,
+      "technical_specifications": "", "required_certifications": "",
+      "required_licenses": "", "required_experience": "", "past_performance_required": false
+    },
+    "compliance": [
+      { "criterion": "", "status": "Complete|Missing|Needs Review|Not Applicable", "explanation": "" }
+    ]
   },
   "suppliers": [
     { "name": "", "product": "", "unit_price": null, "availability": "", "inventory": null, "delivery_time": "", "shipping_cost": null, "min_order": null, "warranty": "", "return_policy": "", "link": "", "notes": "", "recommendation": "" }
   ],
+  "supplier_review": {
+    "selected_supplier": "", "quote_amount": null, "product_availability": "",
+    "lead_time": "", "shipping_method": "", "shipping_cost": null,
+    "delivery_address": "", "estimated_delivery_date": "",
+    "subcontractor_required": false, "labor_required": false, "installation_required": false,
+    "risks": [""]
+  },
   "cost_analysis": {
     "items": [ { "label": "", "amount": null } ],
     "total_cost": null,
@@ -64,10 +93,39 @@ Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura:
     "recommended_price": null,
     "estimated_profit": null
   },
+  "financial_analysis": {
+    "revenue": { "estimated_contract_value": null, "proposed_bid_amount": null, "expected_award_amount": null, "payment_terms": "", "estimated_payment_date": "" },
+    "direct_costs": [ { "label": "", "amount": null } ],
+    "indirect_costs": [ { "label": "", "amount": null } ],
+    "results": {
+      "total_direct_cost": null, "total_indirect_cost": null, "total_estimated_cost": null,
+      "gross_profit": null, "net_profit": null, "gross_margin": null, "net_margin": null,
+      "roi": null, "break_even_amount": null, "required_working_capital": null, "capital_gap": null
+    },
+    "capital": {
+      "company_capital": null, "credit_available": null, "investor_capital": null,
+      "capital_backer": "", "supplier_net_terms": "", "total_available_capital": null,
+      "capital_required": null, "capital_remaining": null
+    },
+    "cash_flow": [
+      { "stage": "", "amount": null, "estimated_date": "" }
+    ],
+    "warnings": [""]
+  },
   "compliance": {
     "level": "cumple|cumple_parcial|no_cumple|revision",
     "checks": [ { "criterion": "", "status": "pass|fail|review", "explanation": "" } ],
     "risk_notes": ""
+  },
+  "risk_decision": {
+    "risks": [
+      { "category": "Compliance|Supplier|Delivery|Financial|Cash-Flow", "level": "Low|Medium|High", "notes": "" }
+    ],
+    "overall_risk_score": 0,
+    "main_risk": "",
+    "required_correction": "",
+    "final_recommendation": "Recommended to Bid|Recommended with Conditions|Needs More Information|Not Recommended",
+    "recommended_actions": [""]
   },
   "summary": ""
 }`;
