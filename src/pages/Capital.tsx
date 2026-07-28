@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { Card, Button, Input, Textarea, Select, Badge, Modal, EmptyState, InfoNote } from '../components/ui'
-import { Plus, Landmark, Star, Search, Trash2, Pencil, Sparkles, Loader as Loader2, Link2 } from 'lucide-react'
+import { Plus, Landmark, Star, Search, Trash2, Pencil, Sparkles, Loader as Loader2, Link2, CircleCheck as CheckCircle2 } from 'lucide-react'
 import { cn, formatCurrency } from '../lib/utils'
 import { useAuth } from '../lib/auth'
 
@@ -14,6 +14,11 @@ export function Capital() {
   const [aiOpen, setAiOpen] = useState(false)
   const [aiUrl, setAiUrl] = useState('')
   const [aiBusy, setAiBusy] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
+  const [bulkText, setBulkText] = useState('')
+  const [bulkPreview, setBulkPreview] = useState<any[]>([])
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [bulkStep, setBulkStep] = useState<'input' | 'preview'>('input')
   const [draft, setDraft] = useState<any>({ name: '', type: 'Banco', favorite: false })
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
@@ -54,6 +59,45 @@ export function Capital() {
     }
   }
 
+  async function analyzeBulk() {
+    if (!bulkText.trim()) return
+    setBulkBusy(true)
+    try {
+      const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`
+      const res = await fetch(fnUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ mode: 'bulk', bulkType: 'capital', bulkText }),
+      })
+      if (!res.ok) throw new Error('Error al analizar')
+      const data = await res.json()
+      const items = (data.capital || []).map((p: any) => ({ ...p, favorite: p.favorite || false }))
+      setBulkPreview(items)
+      setBulkStep('preview')
+    } catch (err: any) {
+      alert('Error: ' + err.message)
+    } finally {
+      setBulkBusy(false)
+    }
+  }
+
+  async function saveBulk() {
+    const clean = bulkPreview.map((p) => {
+      const c: any = {}
+      for (const [k, v] of Object.entries(p)) { if (v !== null && v !== undefined && v !== '') c[k] = v }
+      if (!c.type) c.type = 'Banco'
+      if (!c.favorite) c.favorite = false
+      return c
+    })
+    const { data } = await supabase.from('capital_providers').insert(clean).select()
+    if (data) setProviders((p) => [...(data as any[]), ...p])
+    setBulkOpen(false); setBulkText(''); setBulkPreview([]); setBulkStep('input')
+  }
+
+  function updatePreviewItem(idx: number, field: string, value: any) {
+    setBulkPreview((p) => p.map((item, i) => i === idx ? { ...item, [field]: value } : item))
+  }
+
   const filtered = providers.filter((p) =>
     (filter === 'all' || p.type === filter || (filter === 'fav' && p.favorite)) &&
     (p.name?.toLowerCase().includes(search.toLowerCase()))
@@ -74,7 +118,8 @@ export function Capital() {
           </Select>
         </div>
         <div className="flex gap-2">
-          <Button variant="primary" onClick={() => setAiOpen(true)}><Sparkles size={16} /> Crear con AI</Button>
+          <Button variant="primary" onClick={() => { setBulkStep('input'); setBulkText(''); setBulkPreview([]); setBulkOpen(true) }}><Sparkles size={16} /> Subir en bulk con IA</Button>
+          <Button variant="secondary" onClick={() => setAiOpen(true)}><Link2 size={16} /> Crear con AI</Button>
           <Button variant="gold" onClick={() => { setDraft({ name: '', type: 'Banco', favorite: false }); setOpen(true) }}><Plus size={16} /> Nuevo</Button>
         </div>
       </div>
@@ -85,7 +130,7 @@ export function Capital() {
       </InfoNote>
 
       {filtered.length === 0 ? (
-        <Card><EmptyState icon={<Landmark size={22} />} title="Sin fuentes de capital" subtitle="Agrega bancos, lenders, factoring y más." action={<Button variant="gold" onClick={() => setOpen(true)}><Plus size={16} /> Agregar</Button>} /></Card>
+        <Card><EmptyState icon={<Landmark size={22} />} title="Sin fuentes de capital" subtitle="Agrega bancos, lenders, factoring y más." action={<div className="flex gap-2"><Button variant="primary" onClick={() => setBulkOpen(true)}><Sparkles size={16} /> Subir en bulk con IA</Button><Button variant="gold" onClick={() => setOpen(true)}><Plus size={16} /> Agregar</Button></div>} /></Card>
       ) : (
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filtered.map((p) => (
@@ -153,6 +198,47 @@ export function Capital() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      <Modal open={bulkOpen} onClose={() => { setBulkOpen(false); setBulkStep('input'); setBulkText(''); setBulkPreview([]) }} title="Subir fuentes de capital con IA" wide>
+        {bulkStep === 'input' ? (
+          <div className="space-y-4">
+            <p className="text-sm text-violet-300/70">Pega o sube un texto con una lista de fuentes de capital (bancos, lenders, factoring, etc.). La IA extraerá y organizará cada fuente automáticamente.</p>
+            <Textarea label="Texto con fuentes de capital" value={bulkText} onChange={(e) => setBulkText(e.target.value)} placeholder="Pega aquí la lista de fuentes de capital…" className="min-h-[200px]" />
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="secondary" onClick={() => { setBulkOpen(false); setBulkText('') }}>Cancelar</Button>
+              <Button variant="gold" onClick={analyzeBulk} disabled={bulkBusy || !bulkText.trim()}>
+                {bulkBusy ? <><Loader2 size={16} className="animate-spin" /> Analizando…</> : <><Sparkles size={16} /> Analizar con IA</>}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-sm text-violet-300/70">Revisa y edita antes de guardar. Se encontraron <span className="text-fuchsia-300 font-semibold">{bulkPreview.length}</span> fuentes.</p>
+            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              {bulkPreview.map((p, i) => (
+                <Card key={i} className="p-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input label="Nombre" value={p.name || ''} onChange={(e) => updatePreviewItem(i, 'name', e.target.value)} />
+                    <Input label="Tipo" value={p.type || ''} onChange={(e) => updatePreviewItem(i, 'type', e.target.value)} />
+                    <Input label="Monto mín" value={p.amount_min || ''} onChange={(e) => updatePreviewItem(i, 'amount_min', e.target.value)} />
+                    <Input label="Monto máx" value={p.amount_max || ''} onChange={(e) => updatePreviewItem(i, 'amount_max', e.target.value)} />
+                    <Input label="Interés" value={p.interest_rate || ''} onChange={(e) => updatePreviewItem(i, 'interest_rate', e.target.value)} />
+                    <Input label="Plazo" value={p.term || ''} onChange={(e) => updatePreviewItem(i, 'term', e.target.value)} />
+                    <Input label="Website" value={p.website || ''} onChange={(e) => updatePreviewItem(i, 'website', e.target.value)} />
+                    <Input label="Contacto" value={p.contact || ''} onChange={(e) => updatePreviewItem(i, 'contact', e.target.value)} />
+                  </div>
+                  <Textarea label="Requisitos" value={p.requirements || ''} onChange={(e) => updatePreviewItem(i, 'requirements', e.target.value)} className="mt-2" />
+                  <Textarea label="Notas" value={p.notes || ''} onChange={(e) => updatePreviewItem(i, 'notes', e.target.value)} className="mt-2" />
+                </Card>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="secondary" onClick={() => setBulkStep('input')}>Volver</Button>
+              <Button variant="gold" onClick={saveBulk}><CheckCircle2 size={16} /> Guardar fuentes</Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )

@@ -36,6 +36,10 @@ const BULK_NET_TERMS_PROMPT = `Eres ArcaBid AI. Analiza el texto del usuario y e
 Devuelve ÚNICAMENTE un objeto JSON válido: { "net_terms": [ { "company_name": "", "contact_name": "", "contact_email": "", "contact_phone": "", "payment_terms": "", "credit_limit": "", "available_balance": "", "category": "", "notes": "", "status": "active" } ] }
 Extrae cada empresa como un objeto separado en el array. payment_terms debe ser un texto como "Net 30", "Net 60", "Net 90". Si un campo no está disponible, usa string vacío. status por defecto "active".`;
 
+const BULK_CAPITAL_PROMPT = `Eres ArcaBid AI. Analiza el texto del usuario y extrae TODAS las fuentes de capital que encuentres (bancos, lenders, hard money, MCA, factoring, purchase order financing, invoice financing, supply chain financing, equipment financing, SBA, business credit, líneas de crédito, inversionistas privados).
+Devuelve ÚNICAMENTE un objeto JSON válido: { "capital": [ { "name": "", "type": "", "amount_min": "", "amount_max": "", "interest_rate": "", "term": "", "website": "", "contact": "", "requirements": "", "notes": "", "favorite": false } ] }
+Extrae cada fuente como un objeto separado en el array. type debe ser uno de: Banco, Lender, Private Lender, Hard Money, MCA, Factoring, Purchase Order Financing, Invoice Financing, Supply Chain Financing, Equipment Financing, SBA, Business Credit, Línea de Crédito. Si un campo no está disponible, usa string vacío.`;
+
 const CONTRACT_FLOW_PROMPT = `Eres ArcaBid AI, experto en analizar contratos gubernamentales (RFQs, bids, RFPs).
 Analiza el documento o texto del contrato y extrae toda la información relevante.
 
@@ -186,7 +190,7 @@ async function handleCreate(supabase: any, instruction: string, apiKey: string, 
   }
 
   const { table, ...fields } = parsed;
-  const allowed = ["suppliers", "companies", "investors", "contracts", "insurers", "capital_sources", "tools_links", "bid_pages", "net_terms_companies"];
+  const allowed = ["suppliers", "companies", "investors", "contracts", "insurers", "capital_sources", "capital_providers", "tools_links", "bid_pages", "net_terms_companies"];
   if (!table || !allowed.includes(table)) {
     return new Response(JSON.stringify({ error: "Tabla no válida", table }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
@@ -234,6 +238,7 @@ async function handleBulk(bulkType: string | undefined, bulkText: string | undef
     suppliers: BULK_SUPPLIERS_PROMPT,
     bid_pages: BULK_BIDPAGES_PROMPT,
     net_terms: BULK_NET_TERMS_PROMPT,
+    capital: BULK_CAPITAL_PROMPT,
   };
   const prompt = prompts[bulkType] || BULK_SUPPLIERS_PROMPT;
   const messages = [{ role: "system", content: prompt }, { role: "user", content: bulkText }];
